@@ -54,7 +54,7 @@ scheduler = StepLR(optimizer, step_size=1, gamma=1)
 
 #Batch size
 batch_size = 10000
-epochs = int(1e5)
+epochs = int(1e6)
 
 #Step size
 t = torch.linspace(0, 1, batch_size+1, dtype=torch.float)[:,None]
