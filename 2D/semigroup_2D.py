@@ -53,7 +53,7 @@ optimizer = optim.SGD(model.parameters(), lr=0.01)  #Learning rate
 scheduler = StepLR(optimizer, step_size=1, gamma=1)
 
 #Batch size
-batch_size = 10000
+batch_size = int(1e5)
 epochs = int(1e6)
 
 #Step size
