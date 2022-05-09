@@ -80,8 +80,8 @@ for i in range(epochs):
     S = model(ones*x,t*T)
     loss_weak =  (S[-1,0] - x[0] + T*torch.mean(S[:,2]))**2  #p1t = -q1 in weak form
     loss_weak += (S[-1,1] - x[1] + T*torch.mean(S[:,3]))**2  #p2t = -q2 in weak form
-    loss_weak += (S[-1,2] - x[0] - T*torch.mean(S[:,0]))**2  #q1t = p1 in weak form
-    loss_weak += (S[-1,3] - x[1] - T*torch.mean(S[:,1]))**2  #q2t = p2 in weak form
+    loss_weak += (S[-1,2] - x[2] - T*torch.mean(S[:,0]))**2  #q1t = p1 in weak form
+    loss_weak += (S[-1,3] - x[3] - T*torch.mean(S[:,1]))**2  #q2t = p2 in weak form
 
     #Semigroup loss
     s1 = torch.rand((1,1), dtype=torch.float).to(device) 

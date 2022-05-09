@@ -91,10 +91,10 @@ for depth in ['Trap','Simp']:
         #     loss_weak += (S[-1,1] - x[1] - (T/3)*torch.mean(S[0,0] + 4*S[1:-1:2,0] + 2*S[2:-1:2,0] + S[-1,0]))**2  #qt = p in weak form
         if depth == 'Trap':
             loss_weak =  (S[-1,0] - x[0] + (T/2)*(S[0,1] + 2*torch.sum(S[1:-1,1]) + S[-1,1])/len(S))**2  #pt = -q in weak form
-            loss_weak += (S[-1,1] - x[1] - (T/2)*(S[0,1] + 2*torch.sum(S[1:-1,1]) + S[-1,1])/len(S))**2  #qt = p in weak form
+            loss_weak += (S[-1,1] - x[1] - (T/2)*(S[0,0] + 2*torch.sum(S[1:-1,0]) + S[-1,0])/len(S))**2  #qt = p in weak form
         elif depth == 'Simp':
             loss_weak =  (S[-1,0] - x[0] + (T/3)*(S[0,1] + 4*torch.sum(S[1:-1:2,1]) + 2*torch.sum(S[2:-1:2,1]) + S[-1,1])/len(S))**2  #pt = -q in weak form
-            loss_weak += (S[-1,1] - x[1] - (T/3)*(S[0,0] + 4*torch.sum(S[1:-1:2,1]) + 2*torch.sum(S[2:-1:2,0]) + S[-1,0])/len(S))**2  #qt = p in weak form
+            loss_weak += (S[-1,1] - x[1] - (T/3)*(S[0,0] + 4*torch.sum(S[1:-1:2,0]) + 2*torch.sum(S[2:-1:2,0]) + S[-1,0])/len(S))**2  #qt = p in weak form
 
 
 

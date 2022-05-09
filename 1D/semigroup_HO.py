@@ -97,27 +97,27 @@ for i in range(epochs):
 
 torch.save(model,'semigroup_HO.pt')
 
-device = torch.device('cpu')
-model.to(device)
-t = t.to(device)
-ones = ones.to(device)
-model.eval()
-with torch.no_grad(): #Tell torch to stop keeping track of gradients
-    for i in range(10):
-        plt.figure()
-        x = (2*torch.rand(2, dtype=torch.float)-1).to(device)
-        y = model(ones*x,t)
-        p,q = y[:,0],y[:,1]
-        plt.plot(t, p, label="Neural Net: p")
-        plt.plot(t, q, label="Neural Net: q")
+# device = torch.device('cpu')
+# model.to(device)
+# t = t.to(device)
+# ones = ones.to(device)
+# model.eval()
+# with torch.no_grad(): #Tell torch to stop keeping track of gradients
+#     for i in range(10):
+#         plt.figure()
+#         x = (2*torch.rand(2, dtype=torch.float)-1).to(device)
+#         y = model(ones*x,t)
+#         p,q = y[:,0],y[:,1]
+#         plt.plot(t, p, label="Neural Net: p")
+#         plt.plot(t, q, label="Neural Net: q")
 
-        p,q = harmonic_oscillator(x[0],x[1],t)
-        plt.plot(t, p, label="Finite Diff: p")
-        plt.plot(t, q, label="Finite Diff: q")
+#         p,q = harmonic_oscillator(x[0],x[1],t)
+#         plt.plot(t, p, label="Finite Diff: p")
+#         plt.plot(t, q, label="Finite Diff: q")
 
-        plt.legend()
-        plt.savefig('Semigroup_HO_%d.png'%i)
-        plt.close()
+#         plt.legend()
+#         plt.savefig('Semigroup_HO_%d.png'%i)
+#         plt.close()
 
 
 
