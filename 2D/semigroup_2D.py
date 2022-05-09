@@ -46,15 +46,15 @@ if torch.cuda.is_available() == True:
     device = torch.device('cuda')
 else: 
     device = torch.device('cpu')
-model = Net(1000).to(device)
+model = Net(100).to(device)
 
 #Set up optimizer
 optimizer = optim.SGD(model.parameters(), lr=0.01)  #Learning rate
 scheduler = StepLR(optimizer, step_size=1, gamma=1)
 
 #Batch size
-batch_size = int(1e5)
-epochs = int(1e6)
+batch_size = int(1e3)
+epochs = int(1e5)
 
 #Step size
 t = torch.linspace(0, 1, batch_size+1, dtype=torch.float)[:,None]
