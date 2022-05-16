@@ -22,28 +22,29 @@ class Net(nn.Module):
         x = self.fc4(x)
         return x  #(p,q)
 
-SemiGroup2D = []
-SemiGroup2D.append(torch.load('semigroup_2D.pt', map_location=torch.device('cpu'))) #semigroup loss
+SemiGroupDepth = []
+for i in ['Trap','Simp']:
+    SemiGroupDepth.append(torch.load('semigroup_'+i+'.pt', map_location=torch.device('cpu'))) #semigroup loss
 
-p10,p20,q10,q20 = 0,0,1,1
-for j in range(len(SemiGroup2D)):
-    SemiGroup2D[j].eval()
+Depth = ['Trap','Simp']
+#Initial conditions
+p0,q0 = 0,1
+for j in range(len(SemiGroupDepth)):
+    SemiGroupDepth[j].eval()
     plt.figure()
     with torch.no_grad(): #Tell torch to stop keeping track of gradients
-        t = torch.linspace(0, 10, 50, dtype=torch.float)
+        t = torch.linspace(0, 100, 500, dtype=torch.float)
         dt = torch.reshape(t[1]-t[0],(1,1))
-        S = torch.tensor([[p10,q10]])
-        p1 = torch.zeros(len(t))
-        q1 = torch.zeros(len(t))
-        p1[0],p2[0],q1[0],q2[0] = p10,p20,q10,q20
+        S = torch.tensor([[p0,q0]])
+        p = torch.zeros(len(t))
+        q = torch.zeros(len(t))
+        p[0],q[0] = p0,q0
         for i in range(1,len(t)):
-            S = SemiGroup2D[j](S,dt)
-            p1[i] = S[0,0]
-            p2[i] = S[0,1]
-            q1[i] = S[0,2]
-            q2[i] = S[0,3]
+            S = SemiGroupDepth[j](S,dt)
+            p[i] = S[0,0]
+            q[i] = S[0,1]
 
-        plt.plot(t, p1, label="Neural Net: p1")
-        plt.plot(t, q1, label="Neural Net: q1")
+        plt.plot(t, p, label="Neural Net: p: " + Depth[j])
+        plt.plot(t, q, label="Neural Net: q: " + Depth[j])
         plt.legend()
         plt.show()
