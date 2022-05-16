@@ -33,7 +33,7 @@ for j in range(len(SemiGroupDepth)):
     SemiGroupDepth[j].eval()
     plt.figure()
     with torch.no_grad(): #Tell torch to stop keeping track of gradients
-        t = torch.linspace(0, 100, 500, dtype=torch.float)
+        t = torch.linspace(0, 100, 100, dtype=torch.float)
         dt = torch.reshape(t[1]-t[0],(1,1))
         S = torch.tensor([[p0,q0]])
         p = torch.zeros(len(t))
