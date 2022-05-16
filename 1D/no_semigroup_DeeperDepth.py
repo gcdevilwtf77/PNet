@@ -72,7 +72,7 @@ for depth in ['Trap','Simp']:
 
     model.train()
     #Training epochs
-    for i in range(epochs):
+    for i in range(epochs+1):
 
         #Random initial conditions for p0 and q0
         x = (2*torch.rand(2, dtype=torch.float)-1).to(device)
@@ -83,13 +83,18 @@ for depth in ['Trap','Simp']:
         #Weak formulation loss
         optimizer.zero_grad()
         S = model(ones*x,t*T)
+        # if depth == 'Trap':
+        #     loss_weak =  (S[-1,0] - x[0] + (T/2)*torch.mean(S[0,1] + 2*S[1:-1,1] + S[-1,1]))**2  #pt = -q in weak form
+        #     loss_weak += (S[-1,1] - x[1] - (T/2)*torch.mean(S[0,0] + 2*S[1:-1,0] + S[-1,0]))**2  #qt = p in weak form
+        # elif depth == 'Simp':
+        #     loss_weak =  (S[-1,0] - x[0] + (T/3)*torch.mean(S[0,1] + 4*S[1:-1:2,1] + 2*S[2:-1:2,1] + S[-1,1]))**2  #pt = -q in weak form
+        #     loss_weak += (S[-1,1] - x[1] - (T/3)*torch.mean(S[0,0] + 4*S[1:-1:2,0] + 2*S[2:-1:2,0] + S[-1,0]))**2  #qt = p in weak form
         if depth == 'Trap':
-            loss_weak =  (S[-1,0] - x[0] + (T/2)*(S[0,1] + 2*torch.sum(S[1:-1,1]) + S[-1,1])/len(S))**2  #pt = -q in weak form
-            loss_weak += (S[-1,1] - x[1] - (T/2)*(S[0,0] + 2*torch.sum(S[1:-1,0]) + S[-1,0])/len(S))**2  #qt = p in weak form
+            loss_weak =  (S[-1,0] - x[0] + (T/2)*(S[0,1] + 2*torch.sum(S[1:-1,1]) + S[-1,1])/(len(S)-1))**2  #pt = -q in weak form
+            loss_weak += (S[-1,1] - x[1] - (T/2)*(S[0,0] + 2*torch.sum(S[1:-1,0]) + S[-1,0])/(len(S)-1))**2  #qt = p in weak form
         elif depth == 'Simp':
-            loss_weak =  (S[-1,0] - x[0] + (T/3)*(S[0,1] + 4*torch.sum(S[1:-1:2,1]) + 2*torch.sum(S[2:-1:2,1]) + S[-1,1])/len(S))**2  #pt = -q in weak form
-            loss_weak += (S[-1,1] - x[1] - (T/3)*(S[0,0] + 4*torch.sum(S[1:-1:2,0]) + 2*torch.sum(S[2:-1:2,0]) + S[-1,0])/len(S))**2  #qt = p in weak form
-
+            loss_weak =  (S[-1,0] - x[0] + (T/3)*(S[0,1] + 4*torch.sum(S[:-1:2,1]) + 2*torch.sum(S[1:-1:2,1]) + S[-1,1])/(len(S)-1))**2  #pt = -q in weak form
+            loss_weak += (S[-1,1] - x[1] - (T/3)*(S[0,0] + 4*torch.sum(S[:-1:2,0]) + 2*torch.sum(S[1:-1:2,0]) + S[-1,0])/(len(S)-1))**2  #qt = p in weak form7
 
         #Full loss
         loss = loss_weak
@@ -105,7 +110,7 @@ for depth in ['Trap','Simp']:
     
     print('End time taken of ' +  str(time() - Start))
 
-    torch.save(model,'no_semigroup_'+depth+'.pt')
+    torch.save(model,'semigroup_'+depth+'.pt')
 
 # device = torch.device('cpu')
 # model.to(device)
