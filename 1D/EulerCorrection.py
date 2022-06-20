@@ -29,7 +29,7 @@ def integrate(model,x,b,n,device,rule,F):
     Size = int(np.round(b,2)/h)
     if Size == 0:
         Size = 1
-    S_h = torch.zeros((Size,2))
+    S_h = torch.zeros((Size,2)).to(device)
     # t = torch.linspace(0, b, n+1, dtype=torch.float)[:,None]
     # h = t[1]-t[0]
     # t = t[:-1] + h/2
