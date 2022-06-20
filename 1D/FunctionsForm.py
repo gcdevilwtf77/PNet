@@ -32,12 +32,6 @@ def integrate(model,x,b,n,device,rule,F=None):
 
     #Evaluate the model
     ones = torch.ones((n,1), dtype=torch.float).to(device)
-    print('THis')
-    print(x)
-    print(x.size())
-    print(ones.size())
-    print(ones*x)
-    print((ones*x).size())
     if F is None:
         S = model(ones*x,t)
     else:
@@ -94,8 +88,6 @@ class Net(nn.Module):
         if t.dim()==1:
             t = torch.reshape(t,(len(t),1))
         x = torch.hstack((state,t))
-        print('hstack-------------')
-        print(x)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = F.relu(self.fc3(x))
@@ -154,8 +146,7 @@ for i in range(epochs):
     optimizer.step()
     scheduler.step()
 
-    break
-# torch.save(model,'semigroup_Function.pt')
+torch.save(model,'semigroup_Function.pt')
 
 # device = torch.device('cpu')
 # model.to(device)

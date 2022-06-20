@@ -15,57 +15,54 @@ def F_HO(x):
     F = torch.vstack((-q,p)).T
     return F
 
-def integrate(model,x,b,n,device,rule,F=None):
+def integrate(model,x,b,n,device,rule,F):
     """General function for integration of F(model(x,t)) from t=0 to t=b
     using n points and midpoint rule. F is the dynamics.
     """
 
     #Convert a,b to float
     if type(b) == torch.Tensor:
-        if b.size() == 1:
-            b = b.cpu().numpy()[0]
-        else:
-            b = b.cpu().numpy()
+        b = b.cpu().numpy()[0]
 
     #Set up points
-    
-    t = torch.linspace(0, b, n+1, dtype=torch.float)[:,None]
-    h = t[1]-t[0]
-    t = t[:-1] + h/2
-    t = t.to(device)
+    h = 0.01
+    Size = int(np.round(b,2)/h)
+    if Size == 0:
+        Size = 1
+    S_h = torch.zeros((Size,2))
+    # t = torch.linspace(0, b, n+1, dtype=torch.float)[:,None]
+    # h = t[1]-t[0]
+    # t = t[:-1] + h/2
+    # t = t.to(device)
 
     #Evaluate the model
-    ones = torch.ones((n,1), dtype=torch.float).to(device)
-    XTensor = ones*x
-    if F is None:
-        S = model(XTensor,t)
-    else:
-        S = F(model(XTensor,t))
+    # ones = torch.ones((n,1), dtype=torch.float).to(device)
+    for i in range(len(S_h)):
+        if i == 0:
+            S_h[0,:] = x + h*F(x) + h**2/2*F(model(x))
+        else:
+            S_h[i,:] = S_h[i-1:i,:].clone() + h*F(S_h[i-1:i,:].clone()) + h**2/2*F(model(S_h[i-1:i,:].clone()))
 
     #Integrate
     h = torch.tensor(h).to(device)
-    AntiDerivative = torch.zeros((len(t),x.shape[1]))
-
-    # for i in range(len(t)-1):
 
     if rule == 'left_point_rule':
-        # print(S[i,:].size(),AntiDerivative[i,:].size(),x.shape[1])
-        AntiDerivative[1:] = torch.cumsum(h*S,dim=0)[:-1]
-        # AntiDerivative[i+1,:] = AntiDerivative[i,:] + h*S[i,:]
+        weak_rule = h*torch.sum(S[:-1,:],dim=0)
 
-        # elif rule == 'right_point_rule':
-        #     rule_loss += h*torch.sum(S[1:,:],dim=0)
+    elif rule == 'right_point_rule':
+        weak_rule = h*torch.sum(S[1:,:],dim=0)
 
-        # elif rule == 'mid_point_rule':
-        #     rule_loss += h*torch.sum(S,dim=0)
+    elif rule == 'mid_point_rule':
+        weak_rule = h*torch.sum(S,dim=0)
 
-        # elif rule == 'trapezoid_rule':
-        #     rule_loss += (h/2)*(S[0,:] + 2*torch.sum(S[1:-1,:],dim=0) + S[-1,:])
-            
-        # elif rule == 'simpson_rule':
-        #     rule_loss += (h/3)*(S[0,:] + 4*torch.sum(S[:-1:2,:],dim=0) + 2*torch.sum(S[1:-1:2,:],dim=0) + S[-1,:])
+    elif rule == 'trapezoid_rule':
+        weak_rule = (h/2)*(S[0,:] + 2*torch.sum(S[1:-1,:],dim=0) + S[-1,:])
 
-    return S - XTensor - AntiDerivative
+    elif rule == 'simpson_rule':
+        # print(S_h, int(np.round(b,2)))
+        weak_rule = (h/3)*(S_h[0,:] + 4*torch.sum(S_h[:-1:2,:],dim=0) + 2*torch.sum(S_h[1:-1:2,:],dim=0) + S_h[-1,:])
+        
+    return S_h[-1,:] - S_h[0,:] - weak_rule
 
 def harmonic_oscillator(p0,q0,t):
     """Finite difference solver for harmonic oscillator"""
@@ -86,17 +83,13 @@ def harmonic_oscillator(p0,q0,t):
 class Net(nn.Module):
     def __init__(self, n_hidden=100):
         super(Net, self).__init__()
-        self.fc1 = nn.Linear(3,n_hidden)
+        self.fc1 = nn.Linear(2,n_hidden)
         self.fc2 = nn.Linear(n_hidden,n_hidden)
         self.fc3 = nn.Linear(n_hidden,n_hidden)
         self.fc4 = nn.Linear(n_hidden,2)
 
-    def forward(self, state, t):
-        if t.dim()==1:
-            t = torch.reshape(t,(len(t),1))
-        else:
-            t = torch.reshape(t,(len(t),1))
-        x = torch.hstack((state,t))
+    def forward(self, state):
+        x = state
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = F.relu(self.fc3(x))
@@ -112,7 +105,7 @@ model = Net(100).to(device)
 #Batch size
 batch_size = 1000
 epochs = int(1e5)
-rule = 'left_point_rule'
+rule = 'simpson_rule'
 
 #Set up optimizer
 optimizer = optim.Adam(model.parameters(), lr=0.01)  #Learning rate
@@ -130,22 +123,15 @@ for i in range(epochs):
     x = torch.reshape(x,(1,2))
 
     #Random final time
-    T = 1#*torch.rand(1, dtype=torch.float).to(device)
+    T = torch.rand(1, dtype=torch.float).to(device)
+    # T = torch.linspace(0,1,500)
 
     #Weak formulation loss
     optimizer.zero_grad()
-    # loss_weak = torch.sum((model(x,T) - x - integrate(model,x,T,batch_size,device,rule,F=F_HO))**2)
-    loss_weak = torch.mean(torch.abs(integrate(model,x,T,batch_size,device,rule,F=F_HO)))
-
-
-    #Semigroup loss
-    s1 = torch.rand((1,1), dtype=torch.float).to(device) 
-    s2 = (1-s1)*torch.rand((1,1), dtype=torch.float).to(device) 
-    loss_semigroup = torch.sum((model(x,s1+s2) - model(model(x,s1),s2))**2)
-    loss_semigroup += torch.sum((model(x,s1+s2) - model(model(x,s2),s1))**2)
+    loss_weak = torch.sum(integrate(model,x,T,batch_size,device,rule,F=F_HO)**2)
 
     #Full loss
-    loss = loss_weak + loss_semigroup
+    loss = loss_weak
 
     #Gradient descent
     loss.backward()
@@ -156,15 +142,14 @@ for i in range(epochs):
     optimizer.step()
     scheduler.step()
 
-
-torch.save(model,'semigroup_Function_Linspace.pt')
+torch.save(model,'EulerCorrection.pt')
 
 # device = torch.device('cpu')
 # model.to(device)
 # t = torch.linspace(0, 1, batch_size, dtype=torch.float)[:,None].to(device)
 # ones = torch.ones((batch_size,1), dtype=torch.float).to(device)
 # model.eval()
-# with torch.no_grad(): #Tell torch to stop keeping track of gradients
+# with torch.no_grad(): #Tell torch to stop keeping track of gradientsprint
 #     for i in range(10):
 #         plt.figure()
 #         x = (2*torch.rand(2, dtype=torch.float)-1).to(device)
