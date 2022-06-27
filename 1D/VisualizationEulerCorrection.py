@@ -55,12 +55,12 @@ p0,q0 = 0,1
 Model.eval()
 plt.figure()
 with torch.no_grad(): #Tell torch to stop keeping track of gradients
-    t = torch.linspace(0, 10, 100, dtype=torch.float)
+    t = torch.linspace(0, 10, 10000, dtype=torch.float)
     dt = torch.reshape(t[1]-t[0],(1,1))
     S = torch.tensor([[p0,q0]],dtype=torch.float)
     p = torch.zeros(len(t))
     q = torch.zeros(len(t))
-    h = 0.01
+    h = 0.001
     p[0],q[0] = p0,q0
     for i in range(1,len(t)):
         S = S + h*F_HO(S) + h**2/2*F_HO(Model(S))
