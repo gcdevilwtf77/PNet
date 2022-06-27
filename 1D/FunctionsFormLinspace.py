@@ -53,15 +53,19 @@ def integrate(model,x,b,n,device,rule,F=None):
         AntiDerivative[1:] = torch.cumsum(h*S,dim=0)[:-1]
         # AntiDerivative[i+1,:] = AntiDerivative[i,:] + h*S[i,:]
 
-        # elif rule == 'right_point_rule':
-        #     rule_loss += h*torch.sum(S[1:,:],dim=0)
+    elif rule == 'right_point_rule':
+        # rule_loss += h*torch.sum(S[1:,:],dim=0)
+        AntiDerivative[1:] = torch.cumsum(h*S,dim=0)[1:]
 
-        # elif rule == 'mid_point_rule':
-        #     rule_loss += h*torch.sum(S,dim=0)
 
-        # elif rule == 'trapezoid_rule':
-        #     rule_loss += (h/2)*(S[0,:] + 2*torch.sum(S[1:-1,:],dim=0) + S[-1,:])
-            
+    elif rule == 'mid_point_rule':
+        # rule_loss += h*torch.sum(S,dim=0)
+        # AntiDerivative
+
+    elif rule == 'trapezoid_rule':
+    #     rule_loss += (h/2)*(S[0,:] + 2*torch.sum(S[1:-1,:],dim=0) + S[-1,:])
+        AntiDerivative[1:] = (torch.cumsum(h*S,dim=0)[:-1] + torch.cumsum(h*S,dim=0)[1:])/2
+
         # elif rule == 'simpson_rule':
         #     rule_loss += (h/3)*(S[0,:] + 4*torch.sum(S[:-1:2,:],dim=0) + 2*torch.sum(S[1:-1:2,:],dim=0) + S[-1,:])
 

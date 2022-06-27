@@ -15,18 +15,14 @@ def F_HO(x):
     F = torch.vstack((-q,p)).T
     return F
 
-def integrate(model,x,b,n,device,rule,F):
-    """General function for integration of F(model(x,t)) from t=0 to t=b
-    using n points and midpoint rule. F is the dynamics.
-    """
+def NumericalCorrector(model,x,b,device,h,F):
 
     #Convert a,b to float
     if type(b) == torch.Tensor:
         b = b.cpu().numpy()[0]
 
     #Set up points
-    h = 0.01
-    Size = int(np.round(b,2)/h)
+    Size = int(np.round(b,3)/h)
     if Size == 0:
         Size = 1
     S_h = torch.zeros((Size,2)).to(device)
@@ -39,12 +35,27 @@ def integrate(model,x,b,n,device,rule,F):
     # ones = torch.ones((n,1), dtype=torch.float).to(device)
     for i in range(len(S_h)):
         if i == 0:
-            S_h[0,:] = x + h*F(x) + h**2/2*F(model(x))
+            # S_h[0,:] = x + h*F(x) + h**2/2*F(model(x))
+            y = x + h*F(x) + h**2/2*F(model(x))
         else:
-            S_h[i,:] = S_h[i-1:i,:].clone() + h*F(S_h[i-1:i,:].clone()) + h**2/2*F(model(S_h[i-1:i,:].clone()))
+            # S_h[i,:] = S_h[i-1:i,:] + h*F(S_h[i-1:i,:]) + h**2/2*F(model(S_h[i-1:i,:]))
+            y = y + h*F(y) + h**2/2*F(model(y))
+        S_h[i,:] = y
+
+    return S_h
+
+def integrate(model,x,b,n,device,rule,F):
+    """General function for integration of F(model(x,t)) from t=0 to t=b
+    using n points and midpoint rule. F is the dynamics.
+    """
+
+
+    h = 0.001
+    h = torch.tensor(h).to(device)
+
+    S = NumericalCorrector(model,x,b,device,h,F)
 
     #Integrate
-    h = torch.tensor(h).to(device)
 
     if rule == 'left_point_rule':
         weak_rule = h*torch.sum(S[:-1,:],dim=0)
@@ -59,10 +70,9 @@ def integrate(model,x,b,n,device,rule,F):
         weak_rule = (h/2)*(S[0,:] + 2*torch.sum(S[1:-1,:],dim=0) + S[-1,:])
 
     elif rule == 'simpson_rule':
-        # print(S_h, int(np.round(b,2)))
-        weak_rule = (h/3)*(S_h[0,:] + 4*torch.sum(S_h[:-1:2,:],dim=0) + 2*torch.sum(S_h[1:-1:2,:],dim=0) + S_h[-1,:])
+        weak_rule = (h/3)*(S[0,:] + 4*torch.sum(S[:-1:2,:],dim=0) + 2*torch.sum(S[1:-1:2,:],dim=0) + S[-1,:])
         
-    return S_h[-1,:] - S_h[0,:] - weak_rule
+    return S[-1,:] - S[0,:] - weak_rule
 
 def harmonic_oscillator(p0,q0,t):
     """Finite difference solver for harmonic oscillator"""
