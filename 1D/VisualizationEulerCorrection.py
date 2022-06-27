@@ -47,11 +47,16 @@ with torch.no_grad(): #Tell torch to stop keeping track of gradients
     h = 0.01
     p[0],q[0] = p0,q0
     for i in range(1,len(t)):
-        S = S + h*F_HQ(S) + h**2/2*Model(S)
+        S = S + h*F_HO(S) + h**2/2*F_HO(Model(S))
         p[i] = S[0,0]
         q[i] = S[0,1]
 
     plt.plot(t, p, label="Neural Net: p")
     plt.plot(t, q, label="Neural Net: q")
-    plt.legend()
-    plt.show()
+
+t = torch.linspace(0, 10, 10000, dtype=torch.float)
+p,q = harmonic_oscillator(p0,q0,t)
+plt.plot(t, p, label="Finite Diff: p")
+plt.plot(t, q, label="Finite Diff: q")
+plt.legend()
+plt.show()
