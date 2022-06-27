@@ -6,6 +6,22 @@ from torch.optim.lr_scheduler import StepLR
 import numpy as np
 import matplotlib.pyplot as plt
 
+def harmonic_oscillator(p0,q0,t):
+    """Finite difference solver for harmonic oscillator"""
+
+    n = len(t)
+
+    p = np.zeros(n)
+    q = np.zeros(n)
+    p[0],q[0] = p0,q0
+
+    for i in range(1,n):
+        h = (t[i]-t[i-1])
+        p[i] = p[i-1] - h*q[i-1]
+        q[i] = q[i-1] + h*p[i-1]
+
+    return p,q
+
 class Net(nn.Module):
     def __init__(self, n_hidden=100):
         super(Net, self).__init__()
@@ -39,9 +55,9 @@ p0,q0 = 0,1
 Model.eval()
 plt.figure()
 with torch.no_grad(): #Tell torch to stop keeping track of gradients
-    t = torch.linspace(0, 100, 100, dtype=torch.float)
+    t = torch.linspace(0, 10, 100, dtype=torch.float)
     dt = torch.reshape(t[1]-t[0],(1,1))
-    S = torch.tensor([[p0,q0]])
+    S = torch.tensor([[p0,q0]],dtype=torch.float)
     p = torch.zeros(len(t))
     q = torch.zeros(len(t))
     h = 0.01
