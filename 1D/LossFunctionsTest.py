@@ -5,11 +5,15 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.optim.lr_scheduler import StepLR
 import numpy as np
-import os
-cwd = os.getcwd() ##windows specific
 import matplotlib.pyplot as plt
-# from LossRules import 
-# threading.stack_size(200000000)
+# from LossRules import
+
+def true_solution(x,T):
+    # if x.size()[0] == 1:
+    #     print(x)
+    return torch.stack((x[0][0]*torch.cos(T) - x[0][1]*torch.sin(T),
+                      x[0][0]*torch.sin(T) + x[0][1]*torch.cos(T)),1)
+
 def F_HO(x):
     """Dynamics for harmonic oscillator"""
 
@@ -99,7 +103,7 @@ class Net(nn.Module):
 
 if torch.cuda.is_available() == True:
     device = torch.device('cuda')
-else: 
+else:
     device = torch.device('cpu')
 model = Net(100).to(device)
 
@@ -109,13 +113,12 @@ rule_dic = {'0': 'left_point_rule', '1': 'right_point_rule', '2': 'mid_point_rul
 
 try:
     rule_chosen = input("What rule would you like to use? Vaild choices are: 0:left_point_rule, " +
-                        "1:right_point_rule, 2:mid_point_rule, 3:trapezoid_rule or 4:simpson_rule: ")
+                         "1:right_point_rule, 2:mid_point_rule, 3:trapezoid_rule or 4:simpson_rule: ")
     batch_size_chosen = int(float(input("What batch size would you like? It must be nonnegative integer? ")))
     epochs_chosen  = int(float(input("How many epochs would you like? It must be nonnegative integer? ")))
     rule = rule_dic[rule_chosen]
     batch_size = batch_size_chosen
     epochs = epochs_chosen
-    print(rule)
 
 except:
     batch_size = 1000
@@ -132,9 +135,6 @@ scheduler = StepLR(optimizer, step_size=1, gamma= 0.01**(1/epochs))
 
 model.train()
 #Training epochs
-Results = torch.empty((int(1e4),6))
-j = 0
-k = 0
 for i in range(epochs):
 
     #Random initial conditions for p0 and q0
@@ -149,70 +149,24 @@ for i in range(epochs):
 
 
     #Weak formulation loss
-    optimizer.zero_grad()
-    model_value = model(x,T)
-    loss_weak = torch.sum((model(x,T) - x - integrate(model,x,T,batch_size,device,rule,F=F_HO))**2)
+    # optimizer.zero_grad()
+    # loss_weak = torch.sum((model(x,T) - x - integrate(model,x,T,batch_size,device,rule,F=F_HO))**2)
+    #
+    # #Exact solution
+    # #p = c_1 cos(t) - c_2 sin(t)
+    # #q = c_1 sin(t) + c_2 cos(t)
 
-    #Semigroup loss
-    s1 = torch.rand((1,1), dtype=torch.float).to(device)
-    s2 = (1-s1)*torch.rand((1,1), dtype=torch.float).to(device)
-    loss_semigroup = torch.sum((model(x,s1+s2) - model(model(x,s1),s2))**2)
-    loss_semigroup += torch.sum((model(x,s1+s2) - model(model(x,s2),s1))**2)
+    rule = 'left_point_rule'
+    batch_size = 1000
+    epochs = int(1e5)
+    exact_difference = true_solution(x,T) - x\
+                     - integrate(true_solution,x,T,batch_size,device,rule,F=F_HO)
 
-    #Full loss
-    loss = loss_weak + loss_semigroup
+    if (abs(exact_difference)>10**(-4)).any():
 
-    #Gradient descent
-    loss.backward()
+        print(i,exact_difference)
 
-    Results[j,0:2] = x
-    Results[j,2:3] = T
-    Results[j,3:5] = model_value
-    Results[j,5:6] = loss
-    j += 1
-    if i == 0  or (i+1)%(int(epochs/10**2)) ==0:
-        print(i,loss.item(),T,x)
 
-    if (i+1)%2 == 0:
-        if k == 0:
-            mode_results = 'w'
-            k+=1
-        else:
-            mode_results = 'a'
-        df = pd.DataFrame(Results.detach().numpy(), columns=['p_0', 'q_0', 'T',
-                                                             'p_T', 'q_T', 'loss'])
-        df.to_csv(cwd+'/Results/model_results_rule_' + rule + '_batch_size_' +
-                  str(batch_size) + '_epochs_' + str(epochs) + '.csv', index=False,
-                  mode= mode_results)
-        Results = torch.empty((int(1e4), 6))
-        j = 0
-    optimizer.step()
-    scheduler.step()
-
-torch.save(model,'semigroup_Function_rule_' + rule + '_batch_size_' + str(batch_size) +
-           '_epochs_' + str(epochs) +'.pt')
-
-# device = torch.device('cpu')
-# model.to(device)
-# t = torch.linspace(0, 1, batch_size, dtype=torch.float)[:,None].to(device)
-# ones = torch.ones((batch_size,1), dtype=torch.float).to(device)
-# model.eval()
-# with torch.no_grad(): #Tell torch to stop keeping track of gradients
-#     for i in range(10):
-#         plt.figure()
-#         x = (2*torch.rand(2, dtype=torch.float)-1).to(device)
-#         y = model(ones*x,t)
-#         p,q = y[:,0],y[:,1]
-#         plt.plot(t, p, label="Neural Net: p")
-#         plt.plot(t, q, label="Neural Net: q")
-
-#         p,q = harmonic_oscillator(x[0],x[1],t)
-#         plt.plot(t, p, label="Finite Diff: p")
-#         plt.plot(t, q, label="Finite Diff: q")
-
-#         plt.legend()
-#         plt.savefig('Semigroup_HO_%d.png'%i)
-#         plt.close()
 
 
 
