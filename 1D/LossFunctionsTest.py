@@ -9,10 +9,10 @@ import matplotlib.pyplot as plt
 # from LossRules import
 
 def true_solution(x,T):
-    # if x.size()[0] == 1:
+    # if x.size()[0] > 1:
     #     print(x)
-    return torch.stack((x[0][0]*torch.cos(T) - x[0][1]*torch.sin(T),
-                      x[0][0]*torch.sin(T) + x[0][1]*torch.cos(T)),1)
+    return torch.hstack((x[0][0]*torch.cos(T) - x[0][1]*torch.sin(T),
+                      x[0][0]*torch.sin(T) + x[0][1]*torch.cos(T)))
 
 def F_HO(x):
     """Dynamics for harmonic oscillator"""
