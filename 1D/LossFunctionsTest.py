@@ -34,7 +34,8 @@ def integrate(model,x,b,n,device,rule,F=None):
     #Set up points
     t = torch.linspace(0, b, n+1, dtype=torch.float)[:,None]
     h = t[1]-t[0]
-    t = t[:-1] + h/2
+    if rule != 'left_point_rule' or rule != 'right_point_rule':
+        t = t[:-1] + h/2
     t = t.to(device)
 
     #Evaluate the model
@@ -60,7 +61,8 @@ def integrate(model,x,b,n,device,rule,F=None):
         return mid_point_rule
 
     elif rule == 'trapezoid_rule':
-        trapezoid_rule = (h/2)*(S[0,:] + 2*torch.sum(S[1:-1,:],dim=0) + S[-1,:])
+        trapezoid_rule = (h / 2) * (torch.sum(S[:-1,:],dim=0) + torch.sum(S[1:,:],dim=0))
+        # trapezoid_rule = (h/2)*(S[0,:] + 2*torch.sum(S[1:-1,:],dim=0) + S[-1,:])
         return trapezoid_rule
 
     elif rule == 'simpson_rule':
@@ -137,22 +139,29 @@ model.train()
 #Training epochs
 epochs = int(1e5)
 l = 0
+x = (2 * torch.rand(2, dtype=torch.float) - 1).to(device)
+x = torch.ones(2).to(device)
+x[0] = 0
+x[1] = -1
+x = torch.reshape(x, (1, 2))
+T = torch.ones(1).to(device)
 for k in ['left_point_rule', 'right_point_rule', 'mid_point_rule', 'trapezoid_rule', 'simpson_rule']:
     rule = k
+    # for i in range(epochs):
+
+        # Random initial conditions for p0 and q0
+        # x = (2 * torch.rand(2, dtype=torch.float) - 1).to(device)
+        # x = torch.reshape(x, (1, 2))
+        #
+        # # Random final time
+        # T = 0.2 * torch.rand(1, dtype=torch.float).to(device)
+        # T = max(T, torch.ones(1).to(device) * 0.1)
+        # T = torch.linspace(0,1,500)
     for j in [10, 100, 1000]:
         batch_size = j
-        Errors = np.zeros((epochs,2))
+        Errors = np.zeros((1,2))
         print(k,j)
-        for i in range(epochs):
 
-            #Random initial conditions for p0 and q0
-            x = (2*torch.rand(2, dtype=torch.float)-1).to(device)
-            x = torch.reshape(x,(1,2))
-
-            #Random final time
-            T = 0.2*torch.rand(1, dtype=torch.float).to(device)
-            T = max(T,torch.ones(1).to(device)*0.1)
-            # T = torch.linspace(0,1,500)
 
 
 
@@ -164,21 +173,20 @@ for k in ['left_point_rule', 'right_point_rule', 'mid_point_rule', 'trapezoid_ru
             # #p = c_1 cos(t) - c_2 sin(t)
             # #q = c_1 sin(t) + c_2 cos(t)
 
-            exact_difference = true_solution(x,T) - x\
-                             - integrate(true_solution,x,T,batch_size,device,rule,F=F_HO)
-            Errors[i,0:2] = exact_difference.cpu().numpy()
+        exact_difference = true_solution(x,T) - x - integrate(true_solution,x,T,batch_size,device,rule,F=F_HO)
+        Errors[0,0:2] = np.abs(exact_difference.cpu().numpy())
 
-            if i+1==epochs:
-                if l==0:
-                    df_errors = pd.DataFrame(Errors, columns= [k[0] +'_' + str(batch_size) +'_errors_p',
+
+        if l==0:
+            df_errors = pd.DataFrame(Errors, columns= [k[0] +'_' + str(batch_size) +'_errors_p',
                                                                k[0] +'_' + str(batch_size) +'_errors_q'])
-                    df_errors[k[0] +'_' + str(batch_size)] = batch_size
-                    l+=1
-                else:
-                    df_errors_2 = pd.DataFrame(Errors, columns= [k[0] +'_' + str(batch_size) +'_errors+p',
+            df_errors[k[0] +'_' + str(batch_size)] = batch_size
+            l+=1
+        else:
+            df_errors_2 = pd.DataFrame(Errors, columns= [k[0] +'_' + str(batch_size) +'_errors+p',
                                                                  k[0] +'_' + str(batch_size) +'_errors_q'])
-                    df_errors_2[k[0] +'_' + str(batch_size)] = batch_size
-                    df_errors = pd.concat([df_errors,df_errors_2],axis=1)
+            df_errors_2[k[0] +'_' + str(batch_size)] = batch_size
+            df_errors = pd.concat([df_errors,df_errors_2],axis=1)
 df_errors.to_csv('ErrorCollection.csv', index=False)
 
             # if (abs(exact_difference)>10**(-4)).any():
