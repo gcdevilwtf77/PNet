@@ -111,60 +111,79 @@ model = Net(100).to(device)
 rule_dic = {'0': 'left_point_rule', '1': 'right_point_rule', '2': 'mid_point_rule',
             '3': 'trapezoid_rule', '4': 'simpson_rule'}
 
-try:
-    rule_chosen = input("What rule would you like to use? Vaild choices are: 0:left_point_rule, " +
-                         "1:right_point_rule, 2:mid_point_rule, 3:trapezoid_rule or 4:simpson_rule: ")
-    batch_size_chosen = int(float(input("What batch size would you like? It must be nonnegative integer? ")))
-    epochs_chosen  = int(float(input("How many epochs would you like? It must be nonnegative integer? ")))
-    rule = rule_dic[rule_chosen]
-    batch_size = batch_size_chosen
-    epochs = epochs_chosen
-
-except:
-    batch_size = 1000
-    epochs = int(1e5)
-    rule = 'simpson_rule'
+# try:
+#     rule_chosen = input("What rule would you like to use? Vaild choices are: 0:left_point_rule, " +
+#                          "1:right_point_rule, 2:mid_point_rule, 3:trapezoid_rule or 4:simpson_rule: ")
+#     batch_size_chosen = int(float(input("What batch size would you like? It must be nonnegative integer? ")))
+#     epochs_chosen  = int(float(input("How many epochs would you like? It must be nonnegative integer? ")))
+#     rule = rule_dic[rule_chosen]
+#     batch_size = batch_size_chosen
+#     epochs = epochs_chosen
+#
+# except:
+#     batch_size = 1000
+#     epochs = int(1e5)
+#     rule = 'simpson_rule'
 
 
 #Set up optimizer
-optimizer = optim.Adam(model.parameters(), lr=0.01)  #Learning rate
-scheduler = StepLR(optimizer, step_size=1, gamma= 0.01**(1/epochs))
+# optimizer = optim.Adam(model.parameters(), lr=0.01)  #Learning rate
+# scheduler = StepLR(optimizer, step_size=1, gamma= 0.01**(1/epochs))
 # gamma=0.001**(1/epochs)
 
 
 
 model.train()
 #Training epochs
-for i in range(epochs):
+epochs = int(1e5)
+l = 0
+for k in ['left_point_rule', 'right_point_rule', 'mid_point_rule', 'trapezoid_rule', 'simpson_rule']:
+    rule = k
+    for j in [10, 100, 1000]:
+        batch_size = j
+        Errors = np.zeros((epochs,2))
+        print(k,j)
+        for i in range(epochs):
 
-    #Random initial conditions for p0 and q0
-    x = (2*torch.rand(2, dtype=torch.float)-1).to(device)
-    x = torch.reshape(x,(1,2))
+            #Random initial conditions for p0 and q0
+            x = (2*torch.rand(2, dtype=torch.float)-1).to(device)
+            x = torch.reshape(x,(1,2))
 
-    #Random final time
-    T = 0.2*torch.rand(1, dtype=torch.float).to(device)
-    T = max(T,torch.ones(1).to(device)*0.1)
-    # T = torch.linspace(0,1,500)
+            #Random final time
+            T = 0.2*torch.rand(1, dtype=torch.float).to(device)
+            T = max(T,torch.ones(1).to(device)*0.1)
+            # T = torch.linspace(0,1,500)
 
 
 
-    #Weak formulation loss
-    # optimizer.zero_grad()
-    # loss_weak = torch.sum((model(x,T) - x - integrate(model,x,T,batch_size,device,rule,F=F_HO))**2)
-    #
-    # #Exact solution
-    # #p = c_1 cos(t) - c_2 sin(t)
-    # #q = c_1 sin(t) + c_2 cos(t)
+            #Weak formulation loss
+            # optimizer.zero_grad()
+            # loss_weak = torch.sum((model(x,T) - x - integrate(model,x,T,batch_size,device,rule,F=F_HO))**2)
+            #
+            # #Exact solution
+            # #p = c_1 cos(t) - c_2 sin(t)
+            # #q = c_1 sin(t) + c_2 cos(t)
 
-    rule = 'left_point_rule'
-    batch_size = 1000
-    epochs = int(1e5)
-    exact_difference = true_solution(x,T) - x\
-                     - integrate(true_solution,x,T,batch_size,device,rule,F=F_HO)
+            exact_difference = true_solution(x,T) - x\
+                             - integrate(true_solution,x,T,batch_size,device,rule,F=F_HO)
+            Errors[i,0:2] = exact_difference.cpu().numpy()
 
-    if (abs(exact_difference)>10**(-4)).any():
+            if i+1==epochs:
+                if l==0:
+                    df_errors = pd.DataFrame(Errors, columns= [k[0] +'_' + str(batch_size) +'_errors_p',
+                                                               k[0] +'_' + str(batch_size) +'_errors_q'])
+                    df_errors[k[0] +'_' + str(batch_size)] = batch_size
+                    l+=1
+                else:
+                    df_errors_2 = pd.DataFrame(Errors, columns= [k[0] +'_' + str(batch_size) +'_errors+p',
+                                                                 k[0] +'_' + str(batch_size) +'_errors_q'])
+                    df_errors_2[k[0] +'_' + str(batch_size)] = batch_size
+                    df_errors = pd.concat([df_errors,df_errors_2],axis=1)
+df_errors.to_csv('ErrorCollection.csv', index=False)
 
-        print(i,exact_difference)
+            # if (abs(exact_difference)>10**(-4)).any():
+            #
+            #     print(i,exact_difference)
 
 
 
