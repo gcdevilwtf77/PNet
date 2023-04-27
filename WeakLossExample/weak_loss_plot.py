@@ -28,23 +28,21 @@ torch.set_default_dtype(torch.float64)
 T = np.pi #final time
 batch_size = 1000
 dx = T/batch_size
-epochs = 100000
 x = torch.arange(dx,T+dx,dx).reshape((batch_size,1))
-phi = 1 - torch.exp(-x)
 x_mid = x - dx/2
-phi_mid = 1 - torch.exp(-x_mid)
 
 model=torch.load('weak_loss_model.pt',map_location=torch.device('cpu'))
 
 model.eval()
 #Plot solution
 with torch.no_grad(): #Tell torch to stop keeping track of gradients
-    net = (phi*model(x)).numpy()
+    f = model(x)
+    net = (x + (1/2)*f*x**2).numpy()
     true = torch.sin(x).numpy()
     x = x.numpy()
 
     plt.figure()
-    plt.plot(x,net,label='Neural Net')
+    plt.plot(x,net,label='Neural Net Solution')
     plt.plot(x,true,label='True Solution')
     plt.legend()
     plt.savefig('NeuralNetPlot.pdf')
@@ -53,6 +51,12 @@ with torch.no_grad(): #Tell torch to stop keeping track of gradients
     plt.plot(x,np.absolute(net-true))
     plt.title('Error')
     plt.savefig('NeuralNetErrorPlot.pdf')
+
+    plt.figure()
+    plt.plot(x,f.numpy())
+    plt.title('Neural net')
+    plt.savefig('NeuralNet.pdf')
+
 
 plt.show()
 

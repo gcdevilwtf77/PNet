@@ -36,13 +36,11 @@ batch_size = 1000
 dx = T/batch_size
 epochs = 10000
 x = torch.arange(dx,T+dx,dx).reshape((batch_size,1)).to(device)
-phi = 1 - torch.exp(-x)
 x_mid = x - dx/2
-phi_mid = 1 - torch.exp(-x_mid)
 
 #Set up optimizer and scheduler
 optimizer = optim.Adam(model.parameters(), lr=0.01)  #Learning rate
-scheduler = StepLR(optimizer, step_size=1, gamma=0.01**(1/epochs))
+scheduler = StepLR(optimizer, step_size=1, gamma=0.001**(1/epochs))
 
 #Training epochs
 model.train()
@@ -50,13 +48,13 @@ for i in range(epochs):
 
     #Construct loss function and compute gradients and optimizer updates
     #We are solving the ODE y'(x) = y(x) + cos(x) - sin(x), y(0)=0
-    #whose solution is y(x)=sin(x). We're learning a function y(x)=phi(x)f(x)
-    #where f(x) is the neural network and phi encodes the initial condition
-    #so phi(0)=0. We chose phi(x) = 1 - e^{-x}.
+    #whose solution is y(x)=sin(x). We're learning a function 
+    #y(x)=y(0) + y'(0)x + (1/2)f(x)x^2,
+    #where f(x) is the neural network.
     
     optimizer.zero_grad()
-    y_mid = phi_mid*model(x_mid)
-    y = phi*model(x)
+    y_mid = x_mid + (1/2)*model(x_mid)*x_mid**2
+    y = x + (1/2)*model(x)*x**2
     F = y_mid + torch.cos(x_mid) - torch.sin(x_mid)
     loss = dx*torch.sum(torch.abs(y - dx*torch.cumsum(F,dim=0))) #L1 loss
     loss.backward()
