@@ -53,8 +53,10 @@ with torch.no_grad(): #Tell torch to stop keeping track of gradients
     plt.savefig('NeuralNetErrorPlot.pdf')
 
     plt.figure()
-    plt.plot(x,f.numpy())
+    plt.plot(x,f.numpy(),label='Neural Net')
+    plt.plot(x,2*(true - x)/x**2,label='True')
     plt.title('Neural net')
+    plt.legend()
     plt.savefig('NeuralNet.pdf')
 
 
