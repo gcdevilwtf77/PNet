@@ -7,6 +7,12 @@ import torch.nn.functional as func
 import matplotlib.pyplot as plt
 import torch
 
+
+def y(x):
+    return x + (1/2)*model(x)*x**2
+def F(x,y):
+    return -y + torch.cos(x) + torch.sin(x)
+
 #Our neural network as 2 layers with 100 hidden nodes 
 class Net(nn.Module):
     def __init__(self, n_hidden=100):
@@ -24,6 +30,10 @@ class Net(nn.Module):
 #Use double precision everywhere
 torch.set_default_dtype(torch.float64)
 
+#Rule
+rule = 'midpoint' 
+#rule = 'simpson' 
+
 #Set up device and model
 cuda = True
 use_cuda = cuda and torch.cuda.is_available()
@@ -35,8 +45,9 @@ T = np.pi #final time
 batch_size = 1000
 dx = T/batch_size
 epochs = 10000
-x = torch.arange(dx,T+dx,dx).reshape((batch_size,1)).to(device)
-x_mid = x - dx/2
+x_right = torch.arange(dx,T+dx,dx).reshape((batch_size,1)).to(device)
+x_mid = x_right - dx/2
+x_left = x_right - dx
 
 #Set up optimizer and scheduler
 optimizer = optim.Adam(model.parameters(), lr=0.01)  #Learning rate
@@ -47,16 +58,19 @@ model.train()
 for i in range(epochs):
 
     #Construct loss function and compute gradients and optimizer updates
-    #We are solving the ODE y'(x) = y(x) + cos(x) - sin(x), y(0)=0
+    #We are solving the ODE y'(x) = -y(x) + cos(x) + sin(x), y(0)=0
     #whose solution is y(x)=sin(x). We're learning a function 
     #y(x)=y(0) + y'(0)x + (1/2)f(x)x^2,
     #where f(x) is the neural network.
     
     optimizer.zero_grad()
-    y_mid = x_mid + (1/2)*model(x_mid)*x_mid**2
-    y = x + (1/2)*model(x)*x**2
-    F = y_mid + torch.cos(x_mid) - torch.sin(x_mid)
-    loss = dx*torch.sum(torch.abs(y - dx*torch.cumsum(F,dim=0))) #L1 loss
+    y_left, y_mid, y_right = y(x_left), y(x_mid), y(x_right)
+    F_left, F_mid, F_right = F(x_left,y_left), F(x_mid,y_mid), F(x_right,y_right)
+    if rule == 'midpoint':
+        loss = dx*torch.sum(torch.abs(y_right - dx*torch.cumsum(F_mid, dim=0)))
+        #loss = dx*torch.sum(torch.abs(y_right - dx*torch.cumsum(F_mid, dim=0))/x_mid**2) #I experimented with this weighting
+    if rule == 'simpson':
+        loss = dx*torch.sum(torch.abs(y_right - dx*torch.cumsum((F_left + 4*F_mid + F_right)/6, dim=0))) 
     loss.backward()
 
     optimizer.step()
