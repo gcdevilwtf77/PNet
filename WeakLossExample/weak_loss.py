@@ -6,12 +6,8 @@ import torch.nn as nn
 import torch.nn.functional as func
 import matplotlib.pyplot as plt
 import torch
+import utils
 
-
-def y(x):
-    return x + (1/2)*model(x)*x**2
-def F(x,y):
-    return -y + torch.cos(x) + torch.sin(x)
 
 #Our neural network as 2 layers with 100 hidden nodes 
 class Net(nn.Module):
@@ -31,8 +27,11 @@ class Net(nn.Module):
 torch.set_default_dtype(torch.float64)
 
 #Rule
-rule = 'midpoint' 
+#rule = 'midpoint' 
 #rule = 'simpson' 
+rule = 'trapezoid' 
+#rule = 'rightpoint'
+#rule = 'leftpoint'
 
 #Set up device and model
 cuda = True
@@ -42,12 +41,10 @@ model = Net(100).to(device)
 
 #Initialization of variables
 T = np.pi #final time
+epochs = 10000
 batch_size = 1000
 dx = T/batch_size
-epochs = 10000
-x_right = torch.arange(dx,T+dx,dx).reshape((batch_size,1)).to(device)
-x_mid = x_right - dx/2
-x_left = x_right - dx
+x = torch.arange(dx/2,T,dx).reshape((batch_size,1)).to(device)
 
 #Set up optimizer and scheduler
 optimizer = optim.Adam(model.parameters(), lr=0.01)  #Learning rate
@@ -62,17 +59,10 @@ for i in range(epochs):
     #whose solution is y(x)=sin(x). We're learning a function 
     #y(x)=y(0) + y'(0)x + (1/2)f(x)x^2,
     #where f(x) is the neural network.
-    
-    optimizer.zero_grad()
-    y_left, y_mid, y_right = y(x_left), y(x_mid), y(x_right)
-    F_left, F_mid, F_right = F(x_left,y_left), F(x_mid,y_mid), F(x_right,y_right)
-    if rule == 'midpoint':
-        loss = dx*torch.sum(torch.abs(y_right - dx*torch.cumsum(F_mid, dim=0)))
-        #loss = dx*torch.sum(torch.abs(y_right - dx*torch.cumsum(F_mid, dim=0))/x_mid**2) #I experimented with this weighting
-    if rule == 'simpson':
-        loss = dx*torch.sum(torch.abs(y_right - dx*torch.cumsum((F_left + 4*F_mid + F_right)/6, dim=0))) 
-    loss.backward()
 
+    optimizer.zero_grad()
+    loss = dx*torch.sum(torch.abs(utils.y(model,x+dx/2) - utils.integrate(model,x,dx,rule))) 
+    loss.backward()
     optimizer.step()
     scheduler.step()
 
