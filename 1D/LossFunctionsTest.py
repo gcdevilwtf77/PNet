@@ -7,7 +7,7 @@ from torch.optim.lr_scheduler import StepLR
 import numpy as np
 import matplotlib.pyplot as plt
 # from LossRules import
-
+torch.set_default_dtype(torch.float64)
 def true_solution(x,T):
     # if x.size()[0] > 1:
     #     print(x)
@@ -32,14 +32,14 @@ def integrate(model,x,b,n,device,rule,F=None):
         b = b.cpu().numpy()[0]
 
     #Set up points
-    t = torch.linspace(0, b, n+1, dtype=torch.float)[:,None]
+    t = torch.linspace(0, b, n+1)[:,None]
     h = t[1]-t[0]
     if rule != 'left_point_rule' or rule != 'right_point_rule':
         t = t[:-1] + h/2
     t = t.to(device)
 
     #Evaluate the model
-    ones = torch.ones((n,1), dtype=torch.float).to(device)
+    ones = torch.ones((n,1)).to(device)
     if F is None:
         S = model(ones*x,t)
     else:
@@ -139,7 +139,6 @@ model.train()
 #Training epochs
 epochs = int(1e5)
 l = 0
-x = (2 * torch.rand(2, dtype=torch.float) - 1).to(device)
 x = torch.ones(2).to(device)
 x[0] = 0
 x[1] = -1
@@ -183,9 +182,9 @@ for k in ['left_point_rule', 'right_point_rule', 'mid_point_rule', 'trapezoid_ru
             df_errors[k[0] +'_' + str(batch_size)] = batch_size
             l+=1
         else:
-            df_errors_2 = pd.DataFrame(Errors, columns= [k[0] +'_' + str(batch_size) +'_errors+p',
+            df_errors_2 = pd.DataFrame(Errors, columns= [k[0] +'_' + str(batch_size) +'_errors_p',
                                                                  k[0] +'_' + str(batch_size) +'_errors_q'])
-            df_errors_2[k[0] +'_' + str(batch_size)] = batch_size
+            df_errors_2[k[0] +'_' + str(batch_size)] = 1/batch_size
             df_errors = pd.concat([df_errors,df_errors_2],axis=1)
 df_errors.to_csv('ErrorCollection.csv', index=False)
 

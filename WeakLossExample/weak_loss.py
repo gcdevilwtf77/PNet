@@ -27,9 +27,9 @@ class Net(nn.Module):
 torch.set_default_dtype(torch.float64)
 
 #Rule
-#rule = 'midpoint' 
+rule = 'midpoint'
 #rule = 'simpson' 
-rule = 'trapezoid' 
+# rule = 'trapezoid'
 #rule = 'rightpoint'
 #rule = 'leftpoint'
 
@@ -45,30 +45,34 @@ epochs = 10000
 batch_size = 1000
 dx = T/batch_size
 x = torch.arange(dx/2,T,dx).reshape((batch_size,1)).to(device)
+initial_condition = 1
+y_prime = -1
 
 #Set up optimizer and scheduler
 optimizer = optim.Adam(model.parameters(), lr=0.01)  #Learning rate
 scheduler = StepLR(optimizer, step_size=1, gamma=0.001**(1/epochs))
 
+utils.train(model,x,dx,initial_condition,y_prime,rule,epochs,optimizer,scheduler)
+
 #Training epochs
-model.train()
-for i in range(epochs):
-
-    #Construct loss function and compute gradients and optimizer updates
-    #We are solving the ODE y'(x) = -y(x) + cos(x) + sin(x), y(0)=0
-    #whose solution is y(x)=sin(x). We're learning a function 
-    #y(x)=y(0) + y'(0)x + (1/2)f(x)x^2,
-    #where f(x) is the neural network.
-
-    optimizer.zero_grad()
-    loss = dx*torch.sum(torch.abs(utils.y(model,x+dx/2) - utils.integrate(model,x,dx,rule))) 
-    loss.backward()
-    optimizer.step()
-    scheduler.step()
-
-    if i % 1000 == 0:
-        print(i,loss.item())
-
-torch.save(model,'weak_loss_model.pt')
+# model.train()
+# for i in range(epochs):
+#
+#     #Construct loss function and compute gradients and optimizer updates
+#     #We are solving the ODE y'(x) = -y(x) + cos(x) + sin(x), y(0)=0
+#     #whose solution is y(x)=sin(x). We're learning a function
+#     #y(x)=y(0) + y'(0)x + (1/2)f(x)x^2,
+#     #where f(x) is the neural network.
+#
+#     optimizer.zero_grad()
+#     loss = dx*torch.sum(torch.abs(utils.y(model,x+dx/2) - 1 - utils.integrate(model,x,dx,rule)))
+#     loss.backward()
+#     optimizer.step()
+#     scheduler.step()
+#
+#     if i % 1000 == 0:
+#         print(i,loss.item())
+#
+# torch.save(model,'weak_loss_model.pt')
 
 

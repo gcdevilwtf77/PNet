@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as func
 import matplotlib.pyplot as plt
 import torch
+from utils import y
 
 #Our neural network as 2 layers with 100 hidden nodes 
 class Net(nn.Module):
@@ -30,6 +31,8 @@ batch_size = 1000
 dx = T/batch_size
 x = torch.arange(dx,T+dx,dx).reshape((batch_size,1))
 x_mid = x - dx/2
+initial_condition = 1
+y_prime = -1
 
 model=torch.load('weak_loss_model.pt',map_location=torch.device('cpu'))
 
@@ -37,8 +40,10 @@ model.eval()
 #Plot solution
 with torch.no_grad(): #Tell torch to stop keeping track of gradients
     f = model(x)
-    net = (x + (1/2)*f*x**2).numpy()
-    true = torch.sin(x).numpy()
+    # net = (x + (1/2)*f*x**2).numpy()
+    net = y(model,x,initial_condition, y_prime)#(1 -x + (1/2)*f*x**2).numpy()
+    # true = torch.sin(x).numpy()
+    true = (x - 1 + 2*torch.exp(-x)).numpy()
     x = x.numpy()
 
     plt.figure()
@@ -54,7 +59,8 @@ with torch.no_grad(): #Tell torch to stop keeping track of gradients
 
     plt.figure()
     plt.plot(x,f.numpy(),label='Neural Net')
-    plt.plot(x,2*(true - x)/x**2,label='True')
+    # plt.plot(x,2*(true - x)/x**2,label='True')
+    plt.plot(x,2*(true - 1 + x)/x**2,label='True')
     plt.title('Neural net')
     plt.legend()
     plt.savefig('NeuralNet.pdf')

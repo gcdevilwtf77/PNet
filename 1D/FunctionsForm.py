@@ -10,6 +10,9 @@ cwd = os.getcwd() ##windows specific
 import matplotlib.pyplot as plt
 # from LossRules import 
 # threading.stack_size(200000000)
+import warnings
+warnings.filterwarnings("ignore")
+torch.set_default_dtype(torch.float64)
 def F_HO(x):
     """Dynamics for harmonic oscillator"""
 
@@ -28,13 +31,13 @@ def integrate(model,x,b,n,device,rule,F=None):
         b = b.cpu().numpy()[0]
 
     #Set up points
-    t = torch.linspace(0, b, n+1, dtype=torch.float)[:,None]
+    t = torch.linspace(0, b, n+1)[:,None]
     h = t[1]-t[0]
     t = t[:-1] + h/2
     t = t.to(device)
 
     #Evaluate the model
-    ones = torch.ones((n,1), dtype=torch.float).to(device)
+    ones = torch.ones((n,1)).to(device)
     if F is None:
         S = model(ones*x,t)
     else:
@@ -122,6 +125,7 @@ except:
     epochs = int(1e5)
     rule = 'simpson_rule'
 
+print(rule,batch_size,epochs)
 
 #Set up optimizer
 optimizer = optim.Adam(model.parameters(), lr=0.01)  #Learning rate
@@ -132,36 +136,49 @@ scheduler = StepLR(optimizer, step_size=1, gamma= 0.01**(1/epochs))
 
 model.train()
 #Training epochs
+x = torch.ones(2).to(device)
+x[0] = 0
+x[1] = -1
+x = torch.reshape(x, (1, 2))
+f_T = torch.ones(1).to(device)*0.1
 Results = torch.empty((int(1e4),6))
 j = 0
 k = 0
+losses = []
 for i in range(epochs):
 
     #Random initial conditions for p0 and q0
-    x = (2*torch.rand(2, dtype=torch.float)-1).to(device)
-    x = torch.reshape(x,(1,2))
+    # x = (2*torch.rand(2)-1).to(device)
+    # x = torch.reshape(x,(1,2))
 
     #Random final time
-    T = 0.2*torch.rand(1, dtype=torch.float).to(device)
-    T = max(T,torch.ones(1).to(device)*0.1)
+    # T = 0.2*torch.rand(1).to(device)
+    # T = max(T,torch.ones(1).to(device)*0.1)
     # T = torch.linspace(0,1,500)
 
-
+    if i > 1000:
+        if losses[-1] < 10**(-3):
+            if losses[-1] < losses[-2]:
+                f_T += 10**(-4)
 
     #Weak formulation loss
     optimizer.zero_grad()
-    model_value = model(x,T)
-    loss_weak = torch.sum((model(x,T) - x - integrate(model,x,T,batch_size,device,rule,F=F_HO))**2)
+    loss_weak = 0
+    for z in range(10):
+        T = f_T*torch.rand(1).to(device)
+        model_value = model(x,T)
+        loss_weak += torch.sum((model(x,T) - x - integrate(model,x,T,batch_size,device,rule,F=F_HO))**2)
+    loss_weak = loss_weak/(z+1)
 
     #Semigroup loss
-    s1 = torch.rand((1,1), dtype=torch.float).to(device)
-    s2 = (1-s1)*torch.rand((1,1), dtype=torch.float).to(device)
-    loss_semigroup = torch.sum((model(x,s1+s2) - model(model(x,s1),s2))**2)
-    loss_semigroup += torch.sum((model(x,s1+s2) - model(model(x,s2),s1))**2)
+    # s1 = torch.rand((1,1)).to(device)
+    # s2 = (1-s1)*torch.rand((1,1)).to(device)
+    # loss_semigroup = torch.sum((model(x,s1+s2) - model(model(x,s1),s2))**2)
+    # loss_semigroup += torch.sum((model(x,s1+s2) - model(model(x,s2),s1))**2)
 
     #Full loss
-    loss = loss_weak + loss_semigroup
-
+    loss = loss_weak #+ loss_semigroup
+    losses.append(loss)
     #Gradient descent
     loss.backward()
 
@@ -171,7 +188,7 @@ for i in range(epochs):
     Results[j,5:6] = loss
     j += 1
     if i == 0  or (i+1)%(int(epochs/10**2)) ==0:
-        print(i,loss.item(),T,x)
+        print(i,loss.item(),f_T,x)
 
     if (i+1)%2 == 0:
         if k == 0:
@@ -194,13 +211,13 @@ torch.save(model,'semigroup_Function_rule_' + rule + '_batch_size_' + str(batch_
 
 # device = torch.device('cpu')
 # model.to(device)
-# t = torch.linspace(0, 1, batch_size, dtype=torch.float)[:,None].to(device)
-# ones = torch.ones((batch_size,1), dtype=torch.float).to(device)
+# t = torch.linspace(0, 1, batch_size)[:,None].to(device)
+# ones = torch.ones((batch_size,1)).to(device)
 # model.eval()
 # with torch.no_grad(): #Tell torch to stop keeping track of gradients
 #     for i in range(10):
 #         plt.figure()
-#         x = (2*torch.rand(2, dtype=torch.float)-1).to(device)
+#         x = (2*torch.rand(2)-1).to(device)
 #         y = model(ones*x,t)
 #         p,q = y[:,0],y[:,1]
 #         plt.plot(t, p, label="Neural Net: p")
