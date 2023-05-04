@@ -5,8 +5,8 @@ def y(model,x,initial_condition, y_prime):
     # return 1 - x + (1/2)*model(x)*x**2
     return initial_condition + y_prime*x + (1/2)*model(x)*x**2
 def F(x,y):
-    # return -y + torch.cos(x) + torch.sin(x)
-    return  -y + x
+    # return -y + torch.cos(x) + torch.sin(x) #solution sin(x)
+    return  -y + x #solution x - 1 + 2e^(-x)
 def integrate(model,x,dx,rule,initial_condition, y_prime):
     x_left = x - dx/2
     x_right = x + dx/2

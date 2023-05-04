@@ -7,6 +7,7 @@ import torch.nn.functional as func
 import matplotlib.pyplot as plt
 import torch
 import utils
+import weak_loss_plot
 
 
 #Our neural network as 2 layers with 100 hidden nodes 
@@ -53,6 +54,8 @@ optimizer = optim.Adam(model.parameters(), lr=0.01)  #Learning rate
 scheduler = StepLR(optimizer, step_size=1, gamma=0.001**(1/epochs))
 
 utils.train(model,x,dx,initial_condition,y_prime,rule,epochs,optimizer,scheduler)
+
+weak_loss_plot.model_plot(x.to(torch.device('cpu')),initial_condition,y_prime,model_name='weak_loss_model.pt')
 
 #Training epochs
 # model.train()
