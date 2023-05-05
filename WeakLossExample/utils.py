@@ -6,7 +6,9 @@ def y(model,x,initial_condition, y_prime):
     return initial_condition + y_prime*x + (1/2)*model(x)*x**2
 def F(x,y):
     # return -y + torch.cos(x) + torch.sin(x) #solution sin(x)
-    return  -y + x #solution x - 1 + 2e^(-x)
+    # return  -y + x #solution x - 1 + 2e^(-x)
+    # return -y + torch.exp(-x) #y'' solution (cos(x) + sin(x) + e^(-x))/2
+    return -y**2 + torch.sin(x)**2 + 2*torch.sin(x)*torch.cos(x)
 def integrate(model,x,dx,rule,initial_condition, y_prime):
     x_left = x - dx/2
     x_right = x + dx/2

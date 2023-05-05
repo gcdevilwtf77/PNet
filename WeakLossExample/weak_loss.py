@@ -41,13 +41,13 @@ device = torch.device("cuda" if use_cuda else "cpu")
 model = Net(100).to(device)
 
 #Initialization of variables
-T = np.pi #final time
+T = np.pi/2 #final time
 epochs = 10000
 batch_size = 1000
 dx = T/batch_size
 x = torch.arange(dx/2,T,dx).reshape((batch_size,1)).to(device)
-initial_condition = 1
-y_prime = -1
+initial_condition = 0
+y_prime = 0
 
 #Set up optimizer and scheduler
 optimizer = optim.Adam(model.parameters(), lr=0.01)  #Learning rate

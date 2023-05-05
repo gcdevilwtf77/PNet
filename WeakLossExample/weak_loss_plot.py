@@ -44,7 +44,9 @@ def model_plot(x,initial_condition,y_prime,model_name='weak_loss_model.pt'):
         # net = (x + (1/2)*f*x**2).numpy()
         net = y(model, x, initial_condition, y_prime)  # (1 -x + (1/2)*f*x**2).numpy()
         # true = torch.sin(x).numpy()
-        true = (x - 1 + 2 * torch.exp(-x)).numpy()
+        # true = (x - 1 + 2 * torch.exp(-x)).numpy()
+        # true = (np.cos(x) + np.sin(x) + np.exp(-x))/2
+        true = (torch.sin(x)**2).numpy()
         x = x.numpy()
 
         plt.figure()
