@@ -39,7 +39,7 @@ def integrate(model,F,x,dx,rule,y0):
     if rule == 'trapezoid':
         return dx*torch.cumsum((F_left + F_right)/2, dim=0)
 
-def train(F,y0,T,rule='midpoint',epochs=10000,lr=0.01,batch_size=1000,cuda=True,num_hidden=100,savefile='model.pt'):
+def train(F,y0,T,rule='trapezoid',epochs=10000,lr=0.01,batch_size=1000,cuda=True,num_hidden=100,savefile='model.pt'):
 
     torch.set_default_dtype(torch.float64)
     y0 = [y0.item(),F(torch.tensor(0),y0).item()]  #Augment initial condition with intial slope 
