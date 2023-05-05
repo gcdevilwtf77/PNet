@@ -1,81 +1,30 @@
 """Weak Loss for Solving ODEs with Neural Networks"""
-import torch.optim as optim
-from torch.optim.lr_scheduler import StepLR
 import numpy as np
-import torch.nn as nn
-import torch.nn.functional as func
-import matplotlib.pyplot as plt
 import torch
 import utils
-import weak_loss_plot
 
+def F1(x,y):
+    return -y + torch.cos(x) + torch.sin(x) 
+def y1(x):
+    return torch.sin(x) #True solution for F1
+def F2(x,y):
+    return  -y + x 
+def y2(x):
+    return x - 1 + 2*torch.exp(-x) #True solution for F2
+def F3(x,y):
+    return -y + torch.exp(-x) 
+def y3(x):
+    return torch.cos(x) + torch.sin(x) + torch.exp(-x)/2 #True solution for F3
+def F4(x,y):
+    return -y**2 + torch.sin(x)**2 + 2*torch.sin(x)*torch.cos(x)
+def y4(x):
+    return x #Put the true solution for F4 here
 
-#Our neural network as 2 layers with 100 hidden nodes 
-class Net(nn.Module):
-    def __init__(self, n_hidden=100):
-        super(Net, self).__init__()
-        self.fc1 = nn.Linear(1,n_hidden)
-        self.fc2 = nn.Linear(n_hidden,n_hidden)
-        self.fc3 = nn.Linear(n_hidden,1)
+zero = torch.tensor(0)
+odes = [(F1,y1,2,'F1'),(F2,y2,2,'F2'),(F3,y3,2,'F3')] #List of (ODE,True solution,Final time,name)
 
-    def forward(self, x):
-        x = func.relu(self.fc1(x))
-        x = func.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x
-
-#Use double precision everywhere
-torch.set_default_dtype(torch.float64)
-
-#Rule
-rule = 'midpoint'
-#rule = 'simpson' 
-# rule = 'trapezoid'
-#rule = 'rightpoint'
-#rule = 'leftpoint'
-
-#Set up device and model
-cuda = True
-use_cuda = cuda and torch.cuda.is_available()
-device = torch.device("cuda" if use_cuda else "cpu")
-model = Net(100).to(device)
-
-#Initialization of variables
-T = np.pi/2 #final time
-epochs = 10000
-batch_size = 1000
-dx = T/batch_size
-x = torch.arange(dx/2,T,dx).reshape((batch_size,1)).to(device)
-initial_condition = 0
-y_prime = 0
-
-#Set up optimizer and scheduler
-optimizer = optim.Adam(model.parameters(), lr=0.01)  #Learning rate
-scheduler = StepLR(optimizer, step_size=1, gamma=0.001**(1/epochs))
-
-utils.train(model,x,dx,initial_condition,y_prime,rule,epochs,optimizer,scheduler)
-
-weak_loss_plot.model_plot(x.to(torch.device('cpu')),initial_condition,y_prime,model_name='weak_loss_model.pt')
-
-#Training epochs
-# model.train()
-# for i in range(epochs):
-#
-#     #Construct loss function and compute gradients and optimizer updates
-#     #We are solving the ODE y'(x) = -y(x) + cos(x) + sin(x), y(0)=0
-#     #whose solution is y(x)=sin(x). We're learning a function
-#     #y(x)=y(0) + y'(0)x + (1/2)f(x)x^2,
-#     #where f(x) is the neural network.
-#
-#     optimizer.zero_grad()
-#     loss = dx*torch.sum(torch.abs(utils.y(model,x+dx/2) - 1 - utils.integrate(model,x,dx,rule)))
-#     loss.backward()
-#     optimizer.step()
-#     scheduler.step()
-#
-#     if i % 1000 == 0:
-#         print(i,loss.item())
-#
-# torch.save(model,'weak_loss_model.pt')
-
+#Loop over ODEs to train on
+for (F,y,T,name) in odes:
+    utils.train(F,y(zero),T,savefile=name+'_model.pt')
+    utils.plot(F,y(zero),T,y,model_name=name+'_model.pt',filename_prefix=name)
 
