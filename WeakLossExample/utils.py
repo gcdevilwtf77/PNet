@@ -54,7 +54,7 @@ def train(F,y0,T,rule='trapezoid',epochs=10000,lr=0.01,batch_size=1000,cuda=True
     x = torch.arange(dx/2,T,dx).reshape((batch_size,1)).to(device)
 
     #Set up optimizer and scheduler
-    optimizer = optim.Adam(model.parameters(), lr=0.01)  #Learning rate
+    optimizer = optim.Adam(model.parameters(), lr=lr)  #Learning rate
     scheduler = StepLR(optimizer, step_size=1, gamma=0.001**(1/epochs))
 
     model.train()
