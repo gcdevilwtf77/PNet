@@ -60,9 +60,16 @@ def F10(x,y):
         return torch.hstack([y[2],y[3],-y[0],-y[1]])
 def y10(x):
     return torch.hstack([torch.sin(x),torch.sin(x),torch.cos(x),torch.cos(x)]) #True solution for F10
+def F11(x,y):
+    try:
+       return torch.vstack([y[:,1],-y[:,0]]).T
+    except:
+        return torch.hstack([y[1],-y[0]])
+def y11(x):
+    return torch.hstack([torch.sin(x),torch.sin(x),torch.cos(x),torch.cos(x)]) #True solution for F10
 
 zero = torch.tensor(0)
-name = 'F_10'
+name = 'F10'
 model_name = name + '_model.pt'
 F = F10
 y = y10
