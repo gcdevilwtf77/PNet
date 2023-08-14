@@ -5,6 +5,7 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import StepLR
 import matplotlib.pyplot as plt
 import numpy as np
+from time import time
 
 #Our neural network as 2 layers with 100 hidden nodes 
 class Net(nn.Module):
@@ -21,7 +22,8 @@ class Net(nn.Module):
         return x
 
 class ode(object):
-    def __init__(self,F,y0,T,rule='trapezoid',epochs=10000,lr=0.01,batch_size=1000,cuda=True,num_hidden=100):
+    def __init__(self,F,y0,T,rule='trapezoid',epochs=10000,lr=0.01,batch_size=1000,cuda=True,num_hidden=100,
+                 numerical=False):
         self.F = F
         self.y0 = y0
         self.T = T
@@ -32,6 +34,7 @@ class ode(object):
         self.cuda = cuda
         self.num_hidden = num_hidden
         self.output_size = np.size(y0.numpy())
+        self.numerical = numerical
 
         # Set up device and model
         self.use_cuda = cuda and torch.cuda.is_available()
@@ -84,6 +87,7 @@ class ode(object):
         scheduler = StepLR(optimizer, step_size=1, gamma=0.001**(1/self.epochs))
 
         model.train()
+        start = time()
         for i in range(self.epochs):
 
             optimizer.zero_grad()
@@ -95,7 +99,7 @@ class ode(object):
 
             if i % 1000 == 0:
                 print(i, loss.item())
-
+        # print('NN time: ' + str(time()-start))
         torch.save(model, 'Models/'+savefile)
 
     def plot(self,y_true,model_name='weak_loss_model.pt',filename_prefix='F'):
@@ -110,7 +114,9 @@ class ode(object):
 
         model.eval()
         # Plot solution
+        plt.rcParams['font.size'] = 13
         with torch.no_grad():  # Tell torch to stop keeping track of gradients
+
             x = self.x.to('cpu')
             f = model(x)
             net = self.y(model,x,y0).numpy()
@@ -121,7 +127,7 @@ class ode(object):
             for i in range(np.shape(net)[1]):
                 plt.plot(x, net[:,i], label='Neural Net Solution_' + str(i+1))
             for i in range(np.shape(net)[1]):
-                plt.plot(x, true[:,i], label='True Solution_' + str(i+1))
+                plt.plot(x, true[:,i], label='True Solution_' + str(i+1), linestyle='--')
             plt.legend()
             plt.savefig('Figures/'+filename_prefix+'_NeuralNetPlot.pdf')
             plt.show()
@@ -135,12 +141,16 @@ class ode(object):
             plt.show()
 
             plt.figure()
+            if self.numerical == True:
+                plotstart = 30
+            else:
+                plotstart = 0
             for i in range(np.shape(net)[1]):
-                plt.plot(x, f.numpy()[:,i], label='Neural Net Corrector_'+str(i+1))
+                plt.plot(x[plotstart:], f.numpy()[plotstart:,i], label='Neural Net Corrector_'+str(i+1))
             for i in range(np.shape(net)[1]):
-                plt.plot(x, 2 * (true[:,i].reshape(-1,1) - y0[i:i+1].numpy() -
-                                 y0[self.output_size+i:self.output_size+i+1].numpy()*x) / x**2,
-                         label='True Corrector_'+str(i+1))
+                plt.plot(x[plotstart:], 2 * (true[plotstart:,i].reshape(-1,1) - y0[i:i+1].numpy() -
+                                 y0[self.output_size+i:self.output_size+i+1].numpy()*x[plotstart:]) / x[plotstart:]**2,
+                         label='True Corrector_'+str(i+1), linestyle='--')
             plt.title('Neural net corrector')
             plt.legend()
             plt.savefig('Figures/'+filename_prefix+'_NeuralNetCorrector.pdf')

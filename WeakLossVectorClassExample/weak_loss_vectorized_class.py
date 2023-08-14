@@ -2,6 +2,7 @@
 import numpy as np
 import torch
 from utils_vectorized_class import ode
+from numerical_sim import numerical_solutions
 
 def F1(x,y):
     return -y + torch.cos(x) + torch.sin(x) 
@@ -26,7 +27,7 @@ def y5(x):
 def F6(x,y):
     return 2*torch.sqrt(torch.relu(y))
 def y6(x):
-    return x**2 #True solution for F6
+    return x**2 #True solution for F60
 def F7(x,y):
     return 2*torch.sqrt(torch.relu(y)+1e-6)
 def y7(x):
@@ -62,18 +63,51 @@ def y10(x):
     return torch.hstack([torch.sin(x),torch.sin(x),torch.cos(x),torch.cos(x)]) #True solution for F10
 def F11(x,y):
     try:
-       return torch.vstack([y[:,1],-y[:,0]]).T
+       return torch.vstack([y[:,2],y[:,3],-y[:,0]/(y[:,0]**2+y[:,1]**2)**(3/2),-y[:,1]/(y[:,0]**2+y[:,1]**2)**(3/2)]).T
     except:
-        return torch.hstack([y[1],-y[0]])
+        return torch.hstack([y[2],y[3],-y[0]/(y[0]**2+y[1]**2)**(3/2),-y[1]/(y[0]**2+y[1]**2)**(3/2)])
+def F11_num(t,y):
+    return [y[2],y[3],-y[0]/(y[0]**2+y[1]**2)**(3/2),-y[1]/(y[0]**2+y[1]**2)**(3/2)]
 def y11(x):
-    return torch.hstack([torch.sin(x),torch.sin(x),torch.cos(x),torch.cos(x)]) #True solution for F10
+    sim_output = numerical_solutions(F_num=F11_num, t0=-1, final_time_forward=1,y0=(-1,-2,-10,-11)).numerical_integrate()
+    if x.dim() == 0:
+        return torch.from_numpy(sim_output)
+    else:
+        return torch.from_numpy(
+            numerical_solutions(F_num=F11_num, t0=0, final_time_forward=x[-1], dt=x[-1] / len(x),
+                                y0=sim_output.tolist()).numerical_integrate())#True solution for F11
+def F12(x,y):
+    try:
+       return torch.vstack([y[:,3],y[:,4],y[:,5],-y[:,0]/(y[:,0]**2+y[:,1]**2+y[:,2]**2)**(3/2),
+                            -y[:,1]/(y[:,0]**2+y[:,1]**2+y[:,2]**2)**(3/2),
+                            -y[:,2]/(y[:,0]**2+y[:,1]**2+y[:,2]**2)**(3/2)]).T
+    except:
+        return torch.hstack([y[3],y[4],y[5],-y[0]/(y[0]**2+y[1]**2+y[2]**2)**(3/2),-y[1]/(y[0]**2+y[1]**2+y[2]**2)**(3/2),
+            -y[2]/(y[0]**2+y[1]**2+y[2])**(3/2)])
+def F12_num(t,y):
+    return [y[3],y[4],y[5],-y[0]/(y[0]**2+y[1]**2+y[2]**2)**(3/2),-y[1]/(y[0]**2+y[1]**2+y[2]**2)**(3/2),
+            -y[2]/(y[0]**2+y[1]**2+y[2]**2)**(3/2)]
+def y12(x):
+    sim_output = numerical_solutions(F_num=F12_num, t0=-1, final_time_forward=1,
+                                     y0=(-1,-2,-3,-1,-1,-1)).numerical_integrate()
+    if x.dim() == 0:
+        return torch.from_numpy(sim_output)
+    else:
+        return torch.from_numpy(
+            numerical_solutions(F_num=F12_num, t0=0, final_time_forward=x[-1], dt=x[-1] / len(x),
+                                y0=sim_output.tolist()).numerical_integrate()) #True solution for F12
 
 zero = torch.tensor(0)
-name = 'F10'
+number_reference = '11'
+name = 'F' + number_reference
 model_name = name + '_model.pt'
-F = F10
-y = y10
+F = locals()['F'+number_reference]
+y = locals()['y'+number_reference]
+if int(number_reference) > 10:
+    numerical=True
+else:
+    numerical=False
 
-output = ode(F,y(zero),torch.pi)
+output = ode(F,y(zero),torch.pi,numerical=numerical)
 output.train(model_name)
 output.plot(y,model_name,name)
