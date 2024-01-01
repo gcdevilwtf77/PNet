@@ -27,7 +27,7 @@ def y5(x):
 def F6(x,y):
     return 2*torch.sqrt(torch.relu(y))
 def y6(x):
-    return x**2 #True solution for F60
+    return x**2 #True solution for F6
 def F7(x,y):
     return 2*torch.sqrt(torch.relu(y)+1e-6)
 def y7(x):
@@ -76,6 +76,7 @@ def y11(x):
         return torch.from_numpy(
             numerical_solutions(F_num=F11_num, t0=0, final_time_forward=x[-1], dt=x[-1] / len(x),
                                 y0=sim_output.tolist()).numerical_integrate())#True solution for F11
+F11_plot_labels = ['q_1','q_2','p_1','p_2']
 def F12(x,y):
     try:
        return torch.vstack([y[:,3],y[:,4],y[:,5],-y[:,0]/(y[:,0]**2+y[:,1]**2+y[:,2]**2)**(3/2),
@@ -87,27 +88,99 @@ def F12(x,y):
 def F12_num(t,y):
     return [y[3],y[4],y[5],-y[0]/(y[0]**2+y[1]**2+y[2]**2)**(3/2),-y[1]/(y[0]**2+y[1]**2+y[2]**2)**(3/2),
             -y[2]/(y[0]**2+y[1]**2+y[2]**2)**(3/2)]
+
+# H = 2*(p_1^2 + p_2^2 + p_3^2) - 1/|| q||
 def y12(x):
     sim_output = numerical_solutions(F_num=F12_num, t0=-1, final_time_forward=1,
-                                     y0=(-1,-2,-3,-1,-1,-1)).numerical_integrate()
+                                     y0=(-1,-2,-3,-0.1,-.11,-.12)).numerical_integrate()
     if x.dim() == 0:
         return torch.from_numpy(sim_output)
     else:
         return torch.from_numpy(
-            numerical_solutions(F_num=F12_num, t0=0, final_time_forward=x[-1], dt=x[-1] / len(x),
+            numerical_solutions(F_num=F12_num, t0=0, final_time_forward=x[-1], dt=x[-1] / (len(x)),
                                 y0=sim_output.tolist()).numerical_integrate()) #True solution for F12
+F12_plot_labels = ['q_1','q_2','q_3','p_1','p_2','p_3']
+
+def F13(x,y):
+    try:
+       return torch.vstack([y[:,2],y[:,3],y[:,0]/((y[:,1]-y[:,0])**2)**(3/2),-y[:,1]/((y[:,1]-y[:,0])**2)**(3/2)]).T
+    except:
+        return torch.hstack([y[2],y[3],y[0]/((y[1]-y[0])**2)**(3/2),-y[1]/((y[1]-y[0])**2)**(3/2)])
+def F13_num(t,y):
+    return [y[2],y[3],y[0]/((y[1]-y[0])**2)**(3/2),-y[1]/((y[1]-y[0])**2)**(3/2)]
+def y13(x):
+    sim_output = numerical_solutions(F_num=F13_num, t0=-1, final_time_forward=1,y0=(1,2,.1,11)).numerical_integrate()
+    if x.dim() == 0:
+        return torch.from_numpy(sim_output)
+    else:
+        return torch.from_numpy(
+            numerical_solutions(F_num=F13_num, t0=0, final_time_forward=x[-1], dt=x[-1] / len(x),
+                                y0=sim_output.tolist()).numerical_integrate())#True solution for F11
+F13_plot_labels = ['q_1','q_2','p_1','p_2']
+
+def F14(x,y):
+    try:
+       return torch.vstack([y[:,2],y[:,3],1/((y[:,1]-y[:,0])**2),-1/((y[:,1]-y[:,0])**2)]).T
+    except:
+        return torch.hstack([y[2],y[3],1/((y[1]-y[0])**2),-1/((y[1]-y[0])**2)])
+def F14_num(t,y):
+    return [y[2],y[3],1/((y[1]-y[0])**2),-1/((y[1]-y[0])**2)]
+def y14(x):
+    sim_output = numerical_solutions(F_num=F14_num, t0=-1, final_time_forward=1,y0=(1,2,5,10)).numerical_integrate()
+    if x.dim() == 0:
+        return torch.from_numpy(sim_output)
+    else:
+        return torch.from_numpy(
+            numerical_solutions(F_num=F14_num, t0=0, final_time_forward=x[-1], dt=x[-1] / len(x),
+                                y0=sim_output.tolist()).numerical_integrate())#True solution for F11
+F14_plot_labels = ['q_1','q_2','p_1','p_2']
+
+def F15(x,y):
+    try:
+       return torch.vstack([y[:,3],y[:,4],y[:,5],1/((y[:,1]-y[:,0])**2) + 1/((y[:,2]-y[:,0])**2),
+                            -1/((y[:,1]-y[:,0])**2) + 1/((y[:,2]-y[:,1])**2),
+                            -1/((y[:,2]-y[:,0])**2) - 1/((y[:,2]-y[:,1])**2)]).T
+    except:
+        return torch.hstack([y[3],y[4],y[5],1/((y[1]-y[0])**2) + 1/((y[2]-y[0])**2),
+                             -1/((y[1]-y[0])**2) + 1/((y[2]-y[1])**2),
+                             -1/((y[2]-y[0])**2) - 1/((y[2]-y[1])**2)])
+def F15_num(t,y):
+    return [y[3],y[4],y[5],1/((y[1]-y[0])**2) + 1/((y[2]-y[0])**2),
+                             -1/((y[1]-y[0])**2) + 1/((y[2]-y[1])**2),
+                             -1/((y[2]-y[0])**2) - 1/((y[2]-y[1])**2)]
+def y15(x):
+    sim_output = numerical_solutions(F_num=F15_num, t0=-1, final_time_forward=1,y0=(1,2,3,5,10,15)).numerical_integrate()
+    if x.dim() == 0:
+        return torch.from_numpy(sim_output)
+    else:
+        return torch.from_numpy(
+            numerical_solutions(F_num=F15_num, t0=0, final_time_forward=x[-1], dt=x[-1] / len(x),
+                                y0=sim_output.tolist()).numerical_integrate())#True solution for F11
+F15_plot_labels = ['q_1','q_2','q_3','p_1','p_2','p_3']
 
 zero = torch.tensor(0)
-number_reference = '11'
+number_reference = '15'
 name = 'F' + number_reference
 model_name = name + '_model.pt'
 F = locals()['F'+number_reference]
 y = locals()['y'+number_reference]
-if int(number_reference) > 10:
+
+try:
+    locals()['F' + number_reference + '_num']
     numerical=True
-else:
+except:
     numerical=False
 
-output = ode(F,y(zero),torch.pi,numerical=numerical)
+try:
+    plot_labels = locals()['F'+ number_reference + '_plot_labels']
+except:
+    plot_labels = ['x']
+
+# if int(number_reference) > 10:
+#     numerical=True
+# else:
+#     numerical=False
+
+output = ode(F,y(zero),torch.pi,numerical=numerical,plot_labels=plot_labels,batch_size=int(1e3))
 output.train(model_name)
 output.plot(y,model_name,name)

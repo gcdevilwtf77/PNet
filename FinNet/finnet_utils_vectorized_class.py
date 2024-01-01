@@ -30,7 +30,7 @@ class Net(nn.Module):
 
 class ode(object):
     def __init__(self,F,y0,T,rule='trapezoid',epochs=10000,lr=0.01,batch_size=1000,cuda=True,num_hidden=100,
-                 numerical=False,second_derivate_expanison=True):
+                 numerical=False,second_derivate_expanison=True,plot_labels=['x']):
         self.F = F
         self.y0 = y0
         self.T = T
@@ -43,6 +43,13 @@ class ode(object):
         self.output_size = np.size(y0.numpy())
         self.numerical = numerical
         self.second_derivate_expanison = second_derivate_expanison
+
+        if plot_labels[0] == 'x':
+            self.plot_labels = []
+            for i in range(np.size(y0.numpy())):
+                self.plot_labels.append(plot_labels[0] + '_' + str(i+1))
+        else:
+            self.plot_labels=plot_labels
 
         # Set up device and model
         self.use_cuda = cuda and torch.cuda.is_available()
@@ -63,17 +70,13 @@ class ode(object):
         k = 16
         self.model = nn.Sequential(nn.Linear(input_size, k),
                               nn.Tanh(),
-
                               nn.Linear(k, k),
                               nn.Tanh(),
-
                               nn.Linear(k, k),
                               nn.Tanh(),
-
                               nn.Linear(k, output_size),
                               # nn.Tanh(),
                               ).to(self.device)
-
 
         torch.set_default_dtype(torch.float64)
 
@@ -82,22 +85,6 @@ class ode(object):
             return y0[0] + y0[1] * x + (1 / 2) * model(x) * x ** 2
         else:
            return y0[:self.output_size] + y0[self.output_size:]*x + (1/2)*model(x)*x**2
-
-    def integrate(self,model,y0):
-        x_left = self.x - self.dx/2
-        x_right = self.x + self.dx/2
-        y_left, y_mid, y_right = self.y(model,x_left,y0), self.y(model,self.x,y0), self.y(model,x_right,y0)
-        F_left, F_mid, F_right = self.F(x_left,y_left), self.F(self.x,y_mid), self.F(x_right,y_right)
-        if self.rule == 'midpoint':
-            return self.dx*torch.cumsum(F_mid, dim=0)
-        if self.rule == 'leftpoint':
-            return self.dx*torch.cumsum(F_left, dim=0)
-        if self.rule == 'rightpoint':
-            return self.dx*torch.cumsum(F_right, dim=0)
-        if self.rule == 'simpson':
-            return self.dx*torch.cumsum((F_left + 4*F_mid + F_right)/6, dim=0)
-        if self.rule == 'trapezoid':
-            return self.dx*torch.cumsum((F_left + F_right)/2, dim=0)
 
     def train(self,savefile='model.pt'):
 
@@ -156,9 +143,9 @@ class ode(object):
         y0 = torch.tensor(y0).to('cpu')
 
         if self.second_derivate_expanison==True:
-            version = '_1'
+            version = '_sde'
         else:
-            version = '_2'
+            version = '_sde_no'
 
         model.eval()
         # Plot solution
@@ -174,31 +161,55 @@ class ode(object):
             true = y_true(x).numpy()
             x = x.numpy()
 
+            if self.numerical == False:
+                compare_plot_legend = 'True Sol'
+                compare_title = 'FinNet vs True'
+                error_ylabel = 'x(t): |True - FinNet|'
+                plotstart = 0
+                corrector_plot_legend = 'True Corrector'
+            else:
+                compare_plot_legend = 'Num Sol'
+                compare_title = 'FinNet vs Num'
+                error_ylabel = 'x(t): |Num - FinNet|'
+                plotstart = 30
+                corrector_plot_legend = 'Num Corrector'
+
             plt.figure()
             for i in range(np.shape(net)[1]):
-                plt.plot(x, net[:,i], label='Neural Net Solution_' + str(i+1))
+                plt.plot(x, net[:,i], label=self.plot_labels[i])
             for i in range(np.shape(net)[1]):
-                plt.plot(x, true[:,i], label='True Solution_' + str(i+1))
-            plt.legend()
-            plt.savefig('Figures/'+filename_prefix+'_NeuralNetPlot_FinNet' + version + '.pdf')
+                plt.plot(x, true[:,i], color = 'k', label= compare_plot_legend if i == 0  else None, linestyle='--')
+            plt.legend(loc='center left',bbox_to_anchor=(1,0.5))
+            plt.xlabel('t')
+            plt.ylabel('x(t)')
+            plt.title(compare_title)
+            plt.savefig('Figures/'+filename_prefix+'_NeuralNetPlot_FinNet' + version + '.pdf', bbox_inches = "tight")
             plt.show()
 
             plt.figure()
             for i in range(np.shape(net)[1]):
-                plt.plot(x, np.absolute(net[:,i] - true[:,i]),label='Error_'+str(i+1))
+                plt.plot(x, np.absolute(net[:,i] - true[:,i]),label='Error '+self.plot_labels[i])
+            plt.xlabel('t')
+            plt.ylabel(error_ylabel)
             plt.title('Error')
             plt.legend()
-            plt.savefig('Figures/'+filename_prefix+'_NeuralNetErrorPlot_FinNet' + version + '.pdf')
+            plt.savefig('Figures/'+filename_prefix+'_NeuralNetErrorPlot_FinNet' + version + '.pdf', bbox_inches = "tight")
             plt.show()
 
             plt.figure()
             for i in range(np.shape(net)[1]):
-                plt.plot(x, f.numpy()[:,i], label='Neural Net Corrector_'+str(i+1))
+                plt.plot(x[plotstart:], f.numpy()[plotstart:, i], label='Corrector ' + self.plot_labels[i])
             for i in range(np.shape(net)[1]):
-                plt.plot(x, 2 * (true[:,i].reshape(-1,1) - y0[i:i+1].numpy() -
-                                 y0[self.output_size+i:self.output_size+i+1].numpy()*x) / x**2,
-                         label='True Corrector_'+str(i+1))
+                plt.plot(x[plotstart:],2*(true[plotstart:, i].reshape(-1, 1) - y0[i:i + 1].numpy() -
+                        y0[self.output_size + i:self.output_size + i + 1].numpy()*x[plotstart:])/x[plotstart:]**2,
+                    color='k', label=corrector_plot_legend if i == 0 else None, linestyle='--')
+            # for i in range(np.shape(net)[1]):
+            #     plt.plot(x, f.numpy()[:,i], label='Neural Net Corrector_'+str(i+1))
+            # for i in range(np.shape(net)[1]):
+            #     plt.plot(x, 2 * (true[:,i].reshape(-1,1) - y0[i:i+1].numpy() -
+            #                      y0[self.output_size+i:self.output_size+i+1].numpy()*x) / x**2,
+            #              label='True Corrector_'+str(i+1))
             plt.title('Neural net corrector')
             plt.legend()
-            plt.savefig('Figures/'+filename_prefix+'_NeuralNetCorrector_FinNet' + version + '.pdf')
+            plt.savefig('Figures/'+filename_prefix+'_NeuralNetCorrector_FinNet' + version + '.pdf', bbox_inches = "tight")
             plt.show()

@@ -23,7 +23,7 @@ class numerical_solutions(object):
         dynamical_system.set_integrator(self.solver)
         dynamical_system.set_initial_value(self.y0, self.t0)
         i = 1
-        start = time()
+        # start = time()
         while dynamical_system.successful() and dynamical_system.t < self.final_time_forward:
             dynamical_system.integrate(dynamical_system.t + self.dt)
             solutions[i] = dynamical_system.y
@@ -36,4 +36,6 @@ class numerical_solutions(object):
             return dynamical_system.y
         else:
             # print('Num Solver time: ' + str(time() - start))
+            # return solutions[1:-1:100,:]
             return solutions[1:-1,:]
+
