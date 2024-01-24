@@ -103,7 +103,7 @@ try:
 except:
     plot_labels = ['x']
 
-output = ode(F,y(zero),torch.pi,epochs=int(1e4),batch_size=1000,lr=0.001,
-             numerical=numerical,second_derivate_expanison=False,plot_labels=plot_labels)
+output = ode(F,y(zero),torch.pi,epochs=int(1e4),batch_size=1000 ,lr=0.01,
+             numerical=numerical,second_derivate_expanison=True,plot_labels=plot_labels)
 output.train(model_name)
 output.plot(y,model_name,name)

@@ -86,7 +86,7 @@ def y12(x):
     return torch.hstack([torch.sin(x),torch.sin(x),torch.cos(x),torch.cos(x)]) #True solution for F12
 
 zero = torch.tensor(0)
-number_reference = '3'
+number_reference = '2'
 name = 'F' + number_reference
 model_name = name + '_model_FinNet_2.pt'
 F = locals()['F'+number_reference]
@@ -104,6 +104,6 @@ except:
     plot_labels = ['x']
 
 output = ode(F,y(zero),torch.pi,batch_size=1000,lr=0.001,epochs=int(1e4),
-             numerical=numerical,second_derivate_expanison=True,plot_labels=plot_labels)
+             numerical=numerical,second_derivate_expanison=False,plot_labels=plot_labels)
 output.train(model_name)
 output.plot(y,model_name,name)

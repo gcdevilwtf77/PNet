@@ -110,9 +110,9 @@ class ode(object):
 
         #Set up optimizer and scheduler
         optimizer = optim.Adam(model.parameters(), lr=self.lr, weight_decay=0.0001)  #Learning rate
-        # scheduler = StepLR(optimizer, step_size=1, gamma=0.001**(1/self.epochs))
-        scheduler1 = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
-        scheduler2 = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[100, 200], gamma=0.1)
+        scheduler = StepLR(optimizer, step_size=40, gamma=0.00001**(1/self.epochs))
+        # scheduler1 = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
+        # scheduler2 = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[100, 200], gamma=0.1)
         model.train()
         for i in range(self.epochs):
 
@@ -128,9 +128,11 @@ class ode(object):
             loss = torch.mean((dy_dx-y_output-x_grad)**2)
             loss.backward()
             optimizer.step()
-            scheduler2.step()
+            scheduler.step()
+            # scheduler1.step()
+            # scheduler2.step()
 
-            if i % 1000 == 0:
+            if i % int(self.epochs/10) == 0:
                 print(i, loss.item())
 
         torch.save(model, 'Models/'+savefile)
@@ -207,6 +209,8 @@ class ode(object):
                 plt.plot(x[plotstart:],2*(true[plotstart:,i].reshape(-1,1) - y0[i:i + 1].numpy() -
                             y0[self.output_size + i:self.output_size + i + 1].numpy()*x[plotstart:])/x[plotstart:]**2,
                     color='k', label=corrector_plot_legend if i == 0 else None, linestyle='--')
+            plt.xlabel('t')
+            plt.ylabel(r'$\xi$')
             plt.title('Neural Net Corrector')
             plt.legend()
             plt.savefig('Figures/'+filename_prefix+'_NeuralNetCorrector_PINNS' + version + '.pdf', bbox_inches = "tight")

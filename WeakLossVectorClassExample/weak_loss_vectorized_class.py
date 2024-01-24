@@ -39,6 +39,8 @@ def F8(x,y):
         return torch.hstack([y[1], -y[0]])
 def y8(x):
     return torch.hstack([torch.sin(x),torch.cos(x)]) #True solution for F8
+F8_plot_labels = ['q_1','p_1']
+
 def F9(x,y):
     try:
        return torch.vstack([y[:,1],-y[:,0] + torch.exp(-x)[:,0]]).T
@@ -61,6 +63,8 @@ def F10(x,y):
         return torch.hstack([y[2],y[3],-y[0],-y[1]])
 def y10(x):
     return torch.hstack([torch.sin(x),torch.sin(x),torch.cos(x),torch.cos(x)]) #True solution for F10
+F10_plot_labels = ['q_1','q_2','p_1','p_2']
+
 def F11(x,y):
     try:
        return torch.vstack([y[:,2],y[:,3],-y[:,0]/(y[:,0]**2+y[:,1]**2)**(3/2),-y[:,1]/(y[:,0]**2+y[:,1]**2)**(3/2)]).T
@@ -159,7 +163,7 @@ def y15(x):
 F15_plot_labels = ['q_1','q_2','q_3','p_1','p_2','p_3']
 
 zero = torch.tensor(0)
-number_reference = '15'
+number_reference = '12'
 name = 'F' + number_reference
 model_name = name + '_model.pt'
 F = locals()['F'+number_reference]
@@ -182,5 +186,7 @@ except:
 #     numerical=False
 
 output = ode(F,y(zero),torch.pi,numerical=numerical,plot_labels=plot_labels,batch_size=int(1e3))
+             # ,
+             # rule='simpson')
 output.train(model_name)
 output.plot(y,model_name,name)

@@ -115,10 +115,13 @@ class ode(object):
             # x_grad.requires_grad_()
             if self.second_derivate_expanison == True:
                 y_output = self.y(model,self.x,y0)
+                loss = 0
             else:
                 y_output = model(self.x)
+                loss = (y_output[0] - 1) ** 2
+                if second_order == True:
+                    loss += (y_output[0] - 1) ** 2
             # d1y_output = y_output.clone()
-            loss = (y_output[0] - 1) ** 2
             # y_output[0] = 1
             d1y_output = (-y_output[0:-2] + y_output[2:]) / (2 * self.step)
             loss = loss + loss_mse(d1y_output + y_output[1:-1], self.x[1:-1])
@@ -209,7 +212,9 @@ class ode(object):
             #     plt.plot(x, 2 * (true[:,i].reshape(-1,1) - y0[i:i+1].numpy() -
             #                      y0[self.output_size+i:self.output_size+i+1].numpy()*x) / x**2,
             #              label='True Corrector_'+str(i+1))
-            plt.title('Neural net corrector')
+            plt.xlabel('t')
+            plt.ylabel(r'$\xi$')
+            plt.title('Neural Net Corrector')
             plt.legend()
             plt.savefig('Figures/'+filename_prefix+'_NeuralNetCorrector_FinNet' + version + '.pdf', bbox_inches = "tight")
             plt.show()
