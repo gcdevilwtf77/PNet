@@ -12,14 +12,14 @@ class Net(nn.Module):
     def __init__(self, n_hidden=100,output_size=1):
         super(Net, self).__init__()
         self.fc1 = nn.Linear(1,n_hidden)
-        self.fc2 = nn.Linear(n_hidden,n_hidden)
-        self.fc3 = nn.Linear(n_hidden, n_hidden)
+        # self.fc2 = nn.Linear(n_hidden,n_hidden)
+        # self.fc3 = nn.Linear(n_hidden, n_hidden)
         self.fc4 = nn.Linear(n_hidden,output_size)
 
     def forward(self, x):
-        x = func.tanh(self.fc1(x))
-        x = func.tanh(self.fc2(x))
-        x = func.tanh(self.fc3(x))
+        x = func.sigmoid(self.fc1(x))
+        # x = func.tanh(self.fc2(x))
+        # x = func.tanh(self.fc3(x))
         # x = func.tanh(self.fc4(x))
         x = self.fc4(x)
         return x
@@ -56,20 +56,21 @@ class ode(object):
         self.dx = self.T/self.batch_size
         self.step = (T - 0)/self.batch_size
         # self.x = torch.arange(self.dx/2, self.T, self.dx).reshape((self.batch_size, 1)).to(self.device)
-        self.x = torch.arange(0, self.T + self.step, step=self.step).reshape((self.batch_size + 1, 1)).to(self.device)
+        # self.x = torch.arange(0, self.T + self.step, step=self.step).reshape((self.batch_size + 1, 1)).to(self.device)
+        self.x = torch.arange(0,self.T,self.step).unsqueeze(1).to(self.device)
 
-        input_size = 1
-        output_size = self.output_size
-        k = 16
-        self.model = nn.Sequential(nn.Linear(input_size, k),
-                                   nn.Tanh(),
-                                   nn.Linear(k, k),
-                                   nn.Tanh(),
-                                   nn.Linear(k, k),
-                                   nn.Tanh(),
-                                   nn.Linear(k, output_size),
-                                   nn.Tanh(),
-                                   ).to(self.device)
+        # input_size = 1
+        # output_size = self.output_size
+        # k = 16
+        # self.model = nn.Sequential(nn.Linear(input_size, k),
+        #                            nn.Tanh(),
+        #                            nn.Linear(k, k),
+        #                            nn.Tanh(),
+        #                            nn.Linear(k, k),
+        #                            nn.Tanh(),
+        #                            nn.Linear(k, output_size),
+        #                            nn.Tanh(),
+        #                            ).to(self.device)
 
         torch.set_default_dtype(torch.float64)
 
@@ -78,22 +79,6 @@ class ode(object):
             return y0[0] + y0[1] * x + (1 / 2) * model(x) * x ** 2
         else:
            return y0[:self.output_size] + y0[self.output_size:]*x + (1/2)*model(x)*x**2
-
-    def integrate(self,model,y0):
-        x_left = self.x - self.dx/2
-        x_right = self.x + self.dx/2
-        y_left, y_mid, y_right = self.y(model,x_left,y0), self.y(model,self.x,y0), self.y(model,x_right,y0)
-        F_left, F_mid, F_right = self.F(x_left,y_left), self.F(self.x,y_mid), self.F(x_right,y_right)
-        if self.rule == 'midpoint':
-            return self.dx*torch.cumsum(F_mid, dim=0)
-        if self.rule == 'leftpoint':
-            return self.dx*torch.cumsum(F_left, dim=0)
-        if self.rule == 'rightpoint':
-            return self.dx*torch.cumsum(F_right, dim=0)
-        if self.rule == 'simpson':
-            return self.dx*torch.cumsum((F_left + 4*F_mid + F_right)/6, dim=0)
-        if self.rule == 'trapezoid':
-            return self.dx*torch.cumsum((F_left + F_right)/2, dim=0)
 
     def train(self,savefile='model.pt'):
 
@@ -109,8 +94,8 @@ class ode(object):
         y0 = torch.tensor(y0).to(self.device)
 
         #Set up optimizer and scheduler
-        optimizer = optim.Adam(model.parameters(), lr=self.lr, weight_decay=0.0001)  #Learning rate
-        scheduler = StepLR(optimizer, step_size=40, gamma=0.00001**(1/self.epochs))
+        optimizer = optim.Adam(model.parameters(), lr=self.lr)#, weight_decay=0.0001)  #Learning rate
+        scheduler = StepLR(optimizer, step_size=1, gamma=0.001**(1/(self.epochs)))
         # scheduler1 = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
         # scheduler2 = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[100, 200], gamma=0.1)
         model.train()
@@ -125,7 +110,7 @@ class ode(object):
             else:
                 y_output = model(x_grad)
             dy_dx = torch.autograd.grad(y_output.sum(),x_grad,create_graph=True)[0]
-            loss = torch.mean((dy_dx-y_output-x_grad)**2)
+            loss = torch.mean((dy_dx+y_output-x_grad)**2)
             loss.backward()
             optimizer.step()
             scheduler.step()
