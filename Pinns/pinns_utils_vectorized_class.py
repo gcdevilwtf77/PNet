@@ -59,19 +59,6 @@ class ode(object):
         # self.x = torch.arange(0, self.T + self.step, step=self.step).reshape((self.batch_size + 1, 1)).to(self.device)
         self.x = torch.arange(0,self.T,self.step).unsqueeze(1).to(self.device)
 
-        # input_size = 1
-        # output_size = self.output_size
-        # k = 16
-        # self.model = nn.Sequential(nn.Linear(input_size, k),
-        #                            nn.Tanh(),
-        #                            nn.Linear(k, k),
-        #                            nn.Tanh(),
-        #                            nn.Linear(k, k),
-        #                            nn.Tanh(),
-        #                            nn.Linear(k, output_size),
-        #                            nn.Tanh(),
-        #                            ).to(self.device)
-
         torch.set_default_dtype(torch.float64)
 
     def y(self, model,x,y0):
