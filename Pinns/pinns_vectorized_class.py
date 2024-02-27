@@ -15,7 +15,7 @@ def y2(x):
 def F3(x,y):
     return -y + torch.exp(-x) 
 def y3(x):
-    return torch.cos(x) + torch.sin(x) + torch.exp(-x)/2 #True solution for F3
+    return (torch.cos(x) + torch.sin(x) + torch.exp(-x))/2 #True solution for F3
 def F4(x,y):
     return -y**2 + torch.sin(x)**2 + torch.cos(x)
 def y4(x):
@@ -54,13 +54,6 @@ def F10(x,y):
         return torch.hstack([y[2],y[3],-y[0],-y[1]])
 def y10(x):
     return torch.hstack([torch.sin(x),torch.sin(x),torch.cos(x),torch.cos(x)]) #True solution for F10
-def F10(x,y):
-    try:
-       return torch.vstack([y[:,2],y[:,3],-y[:,0],-y[:,1]]).T
-    except:
-        return torch.hstack([y[2],y[3],-y[0],-y[1]])
-def y10(x):
-    return torch.hstack([torch.sin(x),torch.sin(x),torch.cos(x),torch.cos(x)]) #True solution for F10
 def F11(x,y):
     try:
        return torch.vstack([y[:,2],y[:,3],-y[:,0]/(y[:,0]**2+y[:,1]**2)**(3/2),-y[:,1]/(y[:,0]**2+y[:,1]**2)**(3/2)]).T
@@ -85,8 +78,66 @@ def F12(x,y):
 def y12(x):
     return torch.hstack([torch.sin(x),torch.sin(x),torch.cos(x),torch.cos(x)]) #True solution for F12
 
+def F20(x,y):
+    try:
+       return torch.vstack([y[:,1],y[:,0]*0]).T
+    except:
+        return torch.hstack([y[1],y[0]*0])
+# [y[1],y[0]*1]
+def y20(x):
+    return torch.hstack([x*0,x*0]) #True solution for F10
+# [x,1]
+def F21(x,y):
+    try:
+       return torch.vstack([y[:,1],-y[:,0],]).T
+    except:
+        return torch.hstack([y[1],-y[0]])
+def y21(x):
+    return torch.hstack([torch.sin(x),torch.cos(x)]) #True solution for F10
+
+def F23(x,y):
+    try:
+       return torch.vstack([y[:,1],y[:,0]*0]).T
+    except:
+        return torch.hstack([y[1],y[0]*0])
+# [y[1],y[0]*1]
+def y23(x):
+    return torch.hstack([x*0 + 1,x*0]) #True solution for F10
+# [x,1]
+
+def F24(x,y):
+    try:
+       return torch.vstack([y[:,1],y[:,0]*0]).T
+    except:
+        return torch.hstack([y[1],y[0]*0])
+# [y[1],y[0]*1]
+def y24(x):
+    return torch.hstack([x,x*0 + 1]) #True solution for F10
+# [x,1]
+F24_plot_labels = ['x','x_prime']
+
+def F25(x,y):
+    try:
+       return torch.vstack([y[:,1],y[:,0]*0]).T
+    except:
+        return torch.hstack([y[1],y[0]*0])
+# [y[1],y[0]*1]
+def y25(x):
+    return torch.hstack([x+1,x*0 + 1]) #True solution for F10
+# [x,1]
+F25_plot_labels = ['x','x_prime']
+
+def F26(x,y):
+    try:
+       return torch.vstack([y[:,1],y[:,0]*0 + 1]).T
+    except:
+        return torch.hstack([y[1],y[0]*0 + 1])
+def y26(x):
+    return torch.hstack([1/2*x**2,x]) #True solution for F26
+F26_plot_labels = ['x','x_prime']
+
 zero = torch.tensor(0)
-number_reference = '9'
+number_reference = '26'
 name = 'F' + number_reference
 model_name = name + '_model_PINNS.pt'
 F = locals()['F'+number_reference]
@@ -103,7 +154,7 @@ try:
 except:
     plot_labels = ['x']
 
-output = ode(F,y(zero),torch.pi,epochs=int(1e7),batch_size=1000 ,lr=0.1,num_hidden=1000,
+output = ode(F,y(zero),zero,1,epochs=int(1e5),batch_size=1000 ,lr=0.1,num_hidden=100,
              numerical=numerical,second_derivate_expanison=True,plot_labels=plot_labels)
 output.train(model_name)
 output.plot(y,model_name,name)

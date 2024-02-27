@@ -10,7 +10,7 @@ class numerical_solutions(object):
         self.final_time_forward = final_time_forward
         self.y0 = y0
         self.dt = dt
-        self.size = int(np.round((self.final_time_forward/self.dt),0))
+        self.size = int(np.abs(np.round((self.final_time_forward/self.dt),0)))
         self.solver=solver
 
     def numerical_integrate(self):
@@ -20,7 +20,10 @@ class numerical_solutions(object):
         solutions[0] = self.y0
         steps[0] = self.t0
         dynamical_system = ode(self.F_num)
-        dynamical_system.set_integrator(self.solver)
+        if self.solver == 'vode':
+            dynamical_system.set_integrator(self.solver, method='bdf')
+        else:
+            dynamical_system.set_integrator(self.solver)
         dynamical_system.set_initial_value(self.y0, self.t0)
         i = 1
         # start = time()

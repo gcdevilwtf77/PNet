@@ -15,7 +15,7 @@ def y2(x):
 def F3(x,y):
     return -y + torch.exp(-x) 
 def y3(x):
-    return torch.cos(x) + torch.sin(x) + torch.exp(-x)/2 #True solution for F3
+    return (torch.cos(x) + torch.sin(x) + torch.exp(-x))/2 #True solution for F3
 def F4(x,y):
     return -y**2 + torch.sin(x)**2 + torch.cos(x)
 def y4(x):
@@ -56,13 +56,13 @@ def F10(x,y):
         return torch.hstack([y[2],y[3],-y[0],-y[1]])
 def y10(x):
     return torch.hstack([torch.sin(x),torch.sin(x),torch.cos(x),torch.cos(x)]) #True solution for F10
-def F10(x,y):
-    try:
-       return torch.vstack([y[:,2],y[:,3],-y[:,0],-y[:,1]]).T
-    except:
-        return torch.hstack([y[2],y[3],-y[0],-y[1]])
-def y10(x):
-    return torch.hstack([torch.sin(x),torch.sin(x),torch.cos(x),torch.cos(x)]) #True solution for F10
+# def F10(x,y):
+#     try:
+#        return torch.vstack([y[:,2],y[:,3],-y[:,0],-y[:,1]]).T
+#     except:
+#         return torch.hstack([y[2],y[3],-y[0],-y[1]])
+# def y10(x):
+#     return torch.hstack([torch.sin(x),torch.sin(x),torch.cos(x),torch.cos(x)]) #True solution for F10
 F10_plot_labels = ['q_1','q_2','p_1','p_2']
 
 def F11(x,y):
@@ -162,8 +162,81 @@ def y15(x):
                                 y0=sim_output.tolist()).numerical_integrate())#True solution for F11
 F15_plot_labels = ['q_1','q_2','q_3','p_1','p_2','p_3']
 
+# def F16(x,y):
+#     k1 = 0.04
+#     k2 = 3*1e7
+#     k3 = 1e4
+#     try:
+#         return torch.vstack([-k1*y[:,0] + k3*y[:,1]*y[:,2],
+#                              k1*y[:,0] - k2*y[:,1]**2 - k3 * y[:,1]*y[:,2],
+#                              k2*y[:,1]**2]).T
+#     except:
+#         return torch.hstack([-k1*y[0] + k3*y[1]*y[2], k1*y[0] - k2*y[1]**2 - k3 * y[1]*y[2],k2*y[1]**2])
+#
+#
+# def F16_num(t, y):
+#     k1 = 0.04
+#     k2 = 3*1e7
+#     k3 = 1e4
+#     return [-k1*y[0] + k3*y[1]*y[2], k1*y[0] - k2*y[1]**2 - k3*y[1]*y[2],k2*y[1]**2]
+#
+# def y16(x):
+#     sim_output = numerical_solutions(F_num=F16_num, t0=-1, final_time_forward=1,y0=(1,0,0),solver='vode').numerical_integrate()
+#     if x.dim() == 0:
+#         return torch.from_numpy(sim_output)
+#     else:
+#         return torch.from_numpy(
+#             numerical_solutions(F_num=F16_num, t0=0, final_time_forward=x[-1], dt=x[-1] / len(x),
+#                                 y0=sim_output.tolist(),solver='vode').numerical_integrate())#True solution for F11
+# F16_plot_labels = ['u_1','u_2']
+
+def F19(x,y):
+    k1 = 0.04
+    k2 = 3*1e7
+    k3 = 1e4
+    try:
+        return torch.vstack([-k1*y[:,0] + k3*y[:,1]*y[:,2],
+                             k1*y[:,0] - k2*y[:,1]**2 - k3 * y[:,1]*y[:,2],
+                             k2*y[:,1]**2]).T
+    except:
+        return torch.hstack([-k1*y[0] + k3*y[1]*y[2], k1*y[0] - k2*y[1]**2 - k3 * y[1]*y[2],k2*y[1]**2])
+
+
+def F19_num(t, y):
+    k1 = 0.04
+    k2 = 3*1e7
+    k3 = 1e4
+    return [-k1*y[0] + k3*y[1]*y[2], k1*y[0] - k2*y[1]**2 - k3*y[1]*y[2],k2*y[1]**2]
+
+def y19(x):
+    sim_output = numerical_solutions(F_num=F19_num, t0=-1, final_time_forward=0,y0=(1,0,0),solver='vode').numerical_integrate()
+    if x.dim() == 0:
+        return torch.from_numpy(sim_output)
+    else:
+        return torch.from_numpy(
+            numerical_solutions(F_num=F19_num, t0=0, final_time_forward=x[-1], dt=x[-1] / len(x),
+                                y0=sim_output.tolist(),solver='vode').numerical_integrate())#True solution for F11
+F19_plot_labels = ['u_1','u_2','u_3']
+
+def F20(x,y):
+    try:
+       return torch.vstack([y[:,1],y[:,0]*0]).T
+    except:
+        return torch.hstack([y[1],y[0]*0])
+def y20(x):
+    return torch.hstack([x*0,x*0])
+
+def F26(x,y):
+    try:
+       return torch.vstack([y[:,1],y[:,0]*0 + 1]).T
+    except:
+        return torch.hstack([y[1],y[0]*0 + 1])
+def y26(x):
+    return torch.hstack([1/2*x**2,x]) #True solution for F26
+F26_plot_labels = ['x','x_prime']
+
 zero = torch.tensor(0)
-number_reference = '12'
+number_reference = '26'
 name = 'F' + number_reference
 model_name = name + '_model.pt'
 F = locals()['F'+number_reference]
@@ -185,7 +258,7 @@ except:
 # else:
 #     numerical=False
 
-output = ode(F,y(zero),torch.pi,numerical=numerical,plot_labels=plot_labels,batch_size=int(1e3))
+output = ode(F,y(zero),torch.pi,epochs=int(1e4),numerical=numerical,plot_labels=plot_labels,batch_size=int(1e3))
              # ,
              # rule='simpson')
 output.train(model_name)

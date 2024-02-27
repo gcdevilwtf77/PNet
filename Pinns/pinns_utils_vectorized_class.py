@@ -12,23 +12,31 @@ class Net(nn.Module):
     def __init__(self, n_hidden=100,output_size=1):
         super(Net, self).__init__()
         self.fc1 = nn.Linear(1,n_hidden)
+        self.fc4 = nn.Linear(n_hidden,output_size)
         # self.fc2 = nn.Linear(n_hidden,n_hidden)
         # self.fc3 = nn.Linear(n_hidden, n_hidden)
-        self.fc4 = nn.Linear(n_hidden,output_size)
+        # self.fc4 = nn.Linear(n_hidden,n_hidden)
+        # self.fc5 = nn.Linear(n_hidden,output_size)
 
     def forward(self, x):
         x = func.sigmoid(self.fc1(x))
+        x = self.fc4(x)
+        # x = func.tanh((self.fc1(x)))
         # x = func.tanh(self.fc2(x))
         # x = func.tanh(self.fc3(x))
         # x = func.tanh(self.fc4(x))
-        x = self.fc4(x)
+        # x = self.fc5(x)
         return x
 
 class ode(object):
-    def __init__(self,F,y0,T,rule='trapezoid',epochs=10000,lr=0.01,batch_size=1000,cuda=True,num_hidden=100,
+    def __init__(self,F,y0,t0,T,rule='trapezoid',epochs=10000,lr=0.01,batch_size=1000,cuda=True,num_hidden=100,
                  numerical=False,second_derivate_expanison=True,plot_labels=['x']):
+
+        torch.set_default_dtype(torch.float64)
+
         self.F = F
         self.y0 = y0
+        self.t0= t0
         self.T = T
         self.rule = rule
         self.epochs = epochs
@@ -40,7 +48,7 @@ class ode(object):
         self.numerical = numerical
         self.second_derivate_expanison = second_derivate_expanison
 
-        if plot_labels[0] == 'x':
+        if plot_labels[0] == 'x' and len(plot_labels) == 1:
             self.plot_labels = []
             for i in range(np.size(y0.numpy())):
                 self.plot_labels.append(plot_labels[0] + '_' + str(i+1))
@@ -59,8 +67,6 @@ class ode(object):
         # self.x = torch.arange(0, self.T + self.step, step=self.step).reshape((self.batch_size + 1, 1)).to(self.device)
         self.x = torch.arange(0,self.T,self.step).unsqueeze(1).to(self.device)
 
-        torch.set_default_dtype(torch.float64)
-
     def y(self, model,x,y0):
         if self.output_size == 1:
             return y0[0] + y0[1] * x + (1 / 2) * model(x) * x ** 2
@@ -71,9 +77,9 @@ class ode(object):
 
 
         if self.output_size == 1:
-            y0 = [self.y0.item(), self.F(torch.tensor(0), self.y0).item()]  #Augment initial condition with intial slope
+            y0 = [self.y0.item(), self.F(self.t0, self.y0).item()]  #Augment initial condition with intial slope
         else:
-            y0 = self.y0.tolist() + self.F(torch.tensor(0), self.y0).tolist()
+            y0 = self.y0.tolist() + self.F(self.t0, self.y0).tolist()
 
         model = self.model
 
@@ -90,22 +96,105 @@ class ode(object):
 
             optimizer.zero_grad()
             # x_grad = self.x+self.dx/2
-            x_grad = self.x[1:-1]
+            x_grad = self.x#[1:-1]
+            # x_grad = self.T*torch.rand(self.x.size()[0]).unsqueeze(1).to(self.device)
             x_grad.requires_grad_()
             if self.second_derivate_expanison == True:
                 y_output = self.y(model,x_grad,y0)
             else:
                 y_output = model(x_grad)
-            dy_dx = torch.autograd.grad(y_output.sum(),x_grad,create_graph=True)[0]
-            loss = torch.mean((dy_dx+y_output-x_grad)**2)
+            # F2
+            # dy_dx = torch.autograd.grad(y_output.sum(),x_grad,create_graph=True)[0]
+            # loss = torch.mean((dy_x+y_output-x_grad)**2)
+            # loss.backward()
+            # optimizer.step()
+            # scheduler.step()
+            # F3
+            # dy_dx = torch.autograd.grad(y_output.sum(), x_grad, create_graph=True)[0]
+            # dy_dxx = torch.autograd.grad(dy_dxx.sum(), x_grad, create_graph=True)[0]
+            # loss = torch.mean((dy_dxx+y_output-torch.exp(-x_grad))**2
+            # loss.backward()
+            # optimizer.step()
+            # scheduler.step()
+            # F9
+            # u = y_output[:,0]
+            # uprime = y_output[:,1]
+            # u_x = torch.autograd.grad(u.sum(), x_grad, create_graph=True)[0]
+            # uprime_x = torch.autograd.grad(uprime.sum(), x_grad, create_graph=True)[0]
+            # loss_u = (uprime_x + u - torch.exp(-x_grad)) ** 2
+            # loss_uprime = (uprime - u_x) ** 2
+            # # loss_boundary_u = (u[0]-y0[0])**2 + (u_x[0]-y0[2])**2
+            # # loss_boundary_uprime = (uprime[0]-y0[1])**2 + (uprime_x[0]-y0[3])**2
+            # # loss = torch.mean((uprime - u_x) ** 2 + (uprime_x + u - torch.exp(-x_grad)) ** 2)
+            # loss = torch.mean( loss_u + loss_uprime)# + loss_boundary_u + loss_boundary_uprime)
+            # loss.backward()
+            # optimizer.step()
+            # scheduler.step()
+            # F20
+            # u = y_output[:, 0]
+            # uprime = y_output[:, 1]
+            # u_x = torch.autograd.grad(u.sum(), x_grad, create_graph=True)[0]
+            # uprime_x = torch.autograd.grad(uprime.sum(), x_grad, create_graph=True)[0]
+            # loss = torch.mean((uprime - u_x) ** 2 + (uprime_x - 0*u)**2)
+            # loss.backward()
+            # optimizer.step()
+            # scheduler.step()
+            # F21
+            # u = y_output[:, 0]
+            # uprime = y_output[:, 1]
+            # u_x = torch.autograd.grad(u.sum(), x_grad, create_graph=True)[0]
+            # uprime_x = torch.autograd.grad(uprime.sum(), x_grad, create_graph=True)[0]
+            # loss = torch.mean((u_x - uprime) ** 2 + (uprime_x + u) ** 2)
+            # loss.backward()
+            # optimizer.step()
+            # scheduler.step()
+            # # F23
+            # u = y_output[:, 0]
+            # uprime = y_output[:, 1]
+            # u_x = torch.autograd.grad(u.sum(), x_grad, create_graph=True)[0]
+            # uprime_x = torch.autograd.grad(uprime.sum(), x_grad, create_graph=True)[0]
+            # loss = torch.mean((uprime - u_x) ** 2 + (uprime_x - 0 * u) ** 2)
+            # loss.backward()
+            # optimizer.step()
+            # scheduler.step()
+            # # F24
+            # u = y_output[:, 0]
+            # uprime = y_output[:, 1]
+            # u_x = torch.autograd.grad(u.sum(), x_grad, create_graph=True)[0]
+            # uprime_x = torch.autograd.grad(uprime.sum(), x_grad, create_graph=True)[0]
+            # loss = torch.mean((uprime - u_x) ** 2 + (uprime_x - 0*u) ** 2)
+            # loss.backward()
+            # optimizer.step()
+            # scheduler.step()
+            # # F25
+            # u = y_output[:, 0]
+            # uprime = y_output[:, 1]
+            # u_x = torch.autograd.grad(u.sum(), x_grad, create_graph=True)[0]
+            # uprime_x = torch.autograd.grad(uprime.sum(), x_grad, create_graph=True)[0]
+            # loss = torch.mean((uprime - u_x) ** 2 + (uprime_x - 0*u) ** 2)
+            # loss.backward()
+            # optimizer.step()
+            # scheduler.step()
+            # F26
+            u = y_output[:, 0]
+            uprime = y_output[:, 1]
+            u_x = torch.autograd.grad(u.sum(), x_grad, create_graph=True)[0]
+            uprime_x = torch.autograd.grad(uprime.sum(), x_grad, create_graph=True)[0]
+            loss = torch.mean((uprime - u_x) ** 2 + (uprime_x - 1) ** 2)
             loss.backward()
             optimizer.step()
             scheduler.step()
+
+
+
+
+
             # scheduler1.step()
             # scheduler2.step()
 
             if i % int(self.epochs/10) == 0:
                 print(i, loss.item())
+                # print(i, 'loss_u:' + str(loss_u.mean().item()), 'loss_uprime:' + str(loss_uprime.mean().item()))
 
         torch.save(model, 'Models/'+savefile)
 

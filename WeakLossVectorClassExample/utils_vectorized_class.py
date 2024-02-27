@@ -36,7 +36,7 @@ class ode(object):
         self.output_size = np.size(y0.numpy())
         self.numerical = numerical
 
-        if plot_labels[0] == 'x':
+        if plot_labels[0] == 'x' and len(plot_labels) == 1:
             self.plot_labels = []
             for i in range(np.size(y0.numpy())):
                 self.plot_labels.append(plot_labels[0] + '_' + str(i+1))
@@ -61,6 +61,7 @@ class ode(object):
            return y0[:self.output_size] + y0[self.output_size:]*x + (1/2)*model(x)*x**2
 
     def integrate(self,model,y0):
+
         x_left = self.x - self.dx/2
         x_right = self.x + self.dx/2
         y_left, y_mid, y_right = self.y(model,x_left,y0), self.y(model,self.x,y0), self.y(model,x_right,y0)
@@ -100,11 +101,12 @@ class ode(object):
             optimizer.zero_grad()
             loss = self.dx*torch.sum(torch.abs(self.y(model,self.x+self.dx/2,y0) - y0[:self.output_size] \
                                                - self.integrate(model,y0)))
+            # loss = torch.tanh(loss)
             loss.backward()
             optimizer.step()
             scheduler.step()
 
-            if i % 1000 == 0:
+            if i % (self.epochs/10) == 0: #1000 == 0:
                 print(i, loss.item())
         # print('NN time: ' + str(time()-start))
         torch.save(model, 'Models/'+savefile)

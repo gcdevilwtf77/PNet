@@ -81,7 +81,7 @@ class ode(object):
         torch.set_default_dtype(torch.float64)
 
     def y(self, model,x,y0):
-        if self.output_size == 1:
+        if self.output_size == 1 and len(plot_labels) == 1:
             return y0[0] + y0[1] * x + (1 / 2) * model(x) * x ** 2
         else:
            return y0[:self.output_size] + y0[self.output_size:]*x + (1/2)*model(x)*x**2
