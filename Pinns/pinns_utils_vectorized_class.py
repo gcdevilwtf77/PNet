@@ -6,6 +6,7 @@ from torch.optim.lr_scheduler import StepLR
 from torch import autograd
 import matplotlib.pyplot as plt
 import numpy as np
+from time import time
 
 #Our neural network as 2 layers with 100 hidden nodes 
 class Net(nn.Module):
@@ -19,7 +20,7 @@ class Net(nn.Module):
         # self.fc5 = nn.Linear(n_hidden,output_size)
 
     def forward(self, x):
-        x = func.sigmoid(self.fc1(x))
+        x = torch.sigmoid(self.fc1(x))
         x = self.fc4(x)
         # x = func.tanh((self.fc1(x)))
         # x = func.tanh(self.fc2(x))
@@ -30,7 +31,7 @@ class Net(nn.Module):
 
 class ode(object):
     def __init__(self,F,y0,t0,T,rule='trapezoid',epochs=10000,lr=0.01,batch_size=1000,cuda=True,num_hidden=100,
-                 numerical=False,second_derivate_expanison=True,plot_labels=['x']):
+                 numerical=False,second_derivate_expanison=True,record_detailed=False,plot_labels=['x'],y_true='None'):
 
         torch.set_default_dtype(torch.float64)
 
@@ -47,6 +48,8 @@ class ode(object):
         self.output_size = np.size(y0.numpy())
         self.numerical = numerical
         self.second_derivate_expanison = second_derivate_expanison
+        self.record_detailed = record_detailed
+        self.y_true = y_true
 
         if plot_labels[0] == 'x' and len(plot_labels) == 1:
             self.plot_labels = []
@@ -63,9 +66,9 @@ class ode(object):
         # Set up x
         self.dx = self.T/self.batch_size
         self.step = (T - 0)/self.batch_size
-        # self.x = torch.arange(self.dx/2, self.T, self.dx).reshape((self.batch_size, 1)).to(self.device)
+        self.x = torch.arange(self.dx/2, self.T, self.dx).reshape((self.batch_size, 1)).to(self.device)
         # self.x = torch.arange(0, self.T + self.step, step=self.step).reshape((self.batch_size + 1, 1)).to(self.device)
-        self.x = torch.arange(0,self.T,self.step).unsqueeze(1).to(self.device)
+        # self.x = torch.arange(0,self.T,self.step).unsqueeze(1).to(self.device)
 
     def y(self, model,x,y0):
         if self.output_size == 1:
@@ -92,6 +95,13 @@ class ode(object):
         # scheduler1 = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
         # scheduler2 = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[100, 200], gamma=0.1)
         model.train()
+        if self.record_detailed == True:
+            import pandas as pd
+            x = self.x.to('cpu')
+            true = self.y_true(x).numpy()
+            recording_iteration_mod = np.min(np.array([self.epochs/1e2,1e6]))#to determine how often to save things
+
+        start = time()
         for i in range(self.epochs):
 
             optimizer.zero_grad()
@@ -116,12 +126,12 @@ class ode(object):
             # loss.backward()
             # optimizer.step()
             # scheduler.step()
-            # F9
+            # # F9
             # u = y_output[:,0]
             # uprime = y_output[:,1]
-            # u_x = torch.autograd.grad(u.sum(), x_grad, create_graph=True)[0]
-            # uprime_x = torch.autograd.grad(uprime.sum(), x_grad, create_graph=True)[0]
-            # loss_u = (uprime_x + u - torch.exp(-x_grad)) ** 2
+            # u_x = torch.autograd.grad(u.sum(), x_grad, create_graph=True)[0].flatten()
+            # uprime_x = torch.autograd.grad(uprime.sum(), x_grad, create_graph=True)[0].flatten()
+            # loss_u = (uprime_x + u - torch.exp(-x_grad).flatten()) ** 2
             # loss_uprime = (uprime - u_x) ** 2
             # # loss_boundary_u = (u[0]-y0[0])**2 + (u_x[0]-y0[2])**2
             # # loss_boundary_uprime = (uprime[0]-y0[1])**2 + (uprime_x[0]-y0[3])**2
@@ -130,6 +140,136 @@ class ode(object):
             # loss.backward()
             # optimizer.step()
             # scheduler.step()
+            # # F10
+            # q1 = y_output[:,0]
+            # q2 = y_output[:,1]
+            # p1 = y_output[:,2]
+            # p2 = y_output[:,3]
+            # q1_t = torch.autograd.grad(q1.sum(), x_grad, create_graph=True)[0].flatten()
+            # q2_t = torch.autograd.grad(q2.sum(), x_grad, create_graph=True)[0].flatten()
+            # p1_t = torch.autograd.grad(p1.sum(), x_grad, create_graph=True)[0].flatten()
+            # p2_t = torch.autograd.grad(p2.sum(), x_grad, create_graph=True)[0].flatten()
+            # loss_q1 = (q1_t - p1) **2
+            # loss_q2 = (q2_t - p2) ** 2
+            # loss_p1 = (p1_t + q1) **2
+            # loss_p2 = (p2_t + q2) ** 2
+            # loss = torch.mean(loss_q1 + loss_q2 + loss_p1 + loss_p2)
+            # loss.backward()
+            # optimizer.step()
+            # scheduler.step()
+            # # F10 second derivative false
+            # q1 = y_output[:,0]
+            # q2 = y_output[:,1]
+            # p1 = y_output[:,2]
+            # p2 = y_output[:,3]
+            # q1_t = torch.autograd.grad(q1.sum(), x_grad, create_graph=True)[0].flatten()
+            # q2_t = torch.autograd.grad(q2.sum(), x_grad, create_graph=True)[0].flatten()
+            # p1_t = torch.autograd.grad(p1.sum(), x_grad, create_graph=True)[0].flatten()
+            # p2_t = torch.autograd.grad(p2.sum(), x_grad, create_graph=True)[0].flatten()
+            # loss_q1 = torch.mean((q1_t - p1) **2)
+            # loss_q2 = torch.mean((q2_t - p2) **2)
+            # loss_p1 = torch.mean((p1_t + q1) **2)
+            # loss_p2 = torch.mean((p2_t + q2) **2)
+            # loss_ic = (q1[0] - y0[0])**2 + (q2[0] - y0[1])**2 + (p1[0] - y0[2])**2 + (p2[0] - y0[3])**2
+            # loss = loss_q1 + loss_q2 + loss_p1 + loss_p2 + loss_ic
+            # loss.backward()
+            # optimizer.step()
+            # scheduler.step()
+            # F19
+            k1 = 0.04
+            k2 = 3*1e7
+            k3 = 1e4
+            y1 = y_output[:, 0]
+            y2 = y_output[:, 1]
+            y3 = y_output[:, 2]
+            y1_t = torch.autograd.grad(y1.sum(), x_grad, create_graph=True)[0].flatten()
+            y2_t = torch.autograd.grad(y2.sum(), x_grad, create_graph=True)[0].flatten()
+            y3_t = torch.autograd.grad(y3.sum(), x_grad, create_graph=True)[0].flatten()
+            loss_y1 = (y1_t + k1*y1 - k3*y2*y3)**2
+            loss_y2 = (y2_t - k1*y1 + k2*y2 + k3*y2*y3)**2
+            loss_y3 = (y3_t - k2*y2)**2
+            loss = torch.mean(loss_y1 + loss_y2 + loss_y3)
+            loss.backward()
+            optimizer.step()
+            if self.record_detailed == True:
+                if i%recording_iteration_mod == 0 or (i+1)==self.epochs:
+                    if i==0:
+                        header='True'
+                        mode='w'
+                    else:
+                        header='False'
+                        mode='a'
+                    # data creation and save
+                    detailed_data = pd.DataFrame(np.array([y1.to('cpu').detach().numpy(),y2.to('cpu').detach().numpy(),
+                                                 y3.to('cpu').detach().numpy(),y1_t.to('cpu').detach().numpy(),
+                                                 y2_t.to('cpu').detach().numpy(),y3_t.to('cpu').detach().numpy(),
+                                                 (y1_t + k1*y1 - k3*y2*y3).to('cpu').detach().numpy(),
+                                                 (y2_t - k1*y1 + k2*y2 + k3*y2*y3).to('cpu').detach().numpy(),
+                                                 (y3_t - k2*y2).to('cpu').detach().numpy()]).T,columns=['y1','y2','y3',
+                                                                                                         'y1_t','y2_t',
+                                                                                                         'y3_t','y1_ode',
+                                                                                                         'y2_ode','y3_ode'])
+                    detailed_data['iteration'] = i
+                    detailed_data['loss'] = loss.item()
+                    detailed_data['time_taken'] = (time()-start)/60**2
+                    detailed_data = detailed_data[['iteration','loss','time_taken','y1','y2','y3','y1_t','y2_t','y3_t',
+                                                   'y1_ode','y2_ode','y3_ode']]
+                    detailed_data.to_csv('F19/Data/detailed_data_record_F19_PiNNs.csv',index=False,header=header,mode=mode)
+
+                    # model save
+                    torch.save(model, 'F19/Models/F_19_model_PiNNs_iteration_' + str(i) + '.pt')
+
+                    f = model(self.x)
+                    net = self.y(model, self.x, y0).to('cpu').detach().numpy()
+
+                    if self.numerical == False:
+                        compare_plot_legend = 'True Sol'
+                        compare_title = 'PiNNs vs True'
+                        error_ylabel = 'x(t): |True - PiNNs|'
+                        corrector_plot_legend = 'True Corrector'
+                    else:
+                        compare_plot_legend = 'Num Sol'
+                        compare_title = 'PiNNs vs Num'
+                        error_ylabel = 'x(t): |Num - PiNNs|'
+                        corrector_plot_legend = 'Num Corrector'
+
+                    for j in range(np.shape(net)[1]):
+                        plt.figure()
+                        plt.plot(x, net[:, j], label=self.plot_labels[j])
+                        plt.plot(x, true[:, j], color='k', label=compare_plot_legend,linestyle='--')
+                        plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+                        plt.xlabel('t')
+                        plt.ylabel('x(t)')
+                        plt.title(compare_title)
+                        plt.savefig('F19/Figures/F19_NeuralNetPlot_PINNS_'+ str(self.plot_labels[j]) + '_iteration_'
+                                    + str(i) + '.pdf', bbox_inches="tight")
+                        plt.close()
+
+                        plt.figure()
+                        plt.plot(x, np.absolute(net[:, j] - true[:, j]), label='Error ' + self.plot_labels[j])
+                        plt.xlabel('t')
+                        plt.ylabel(error_ylabel)
+                        plt.title('Error')
+                        plt.legend()
+                        plt.savefig('F19/Figures/F19_NeuralNetErrorPlot_PINNS_'+ str(self.plot_labels[0]) + '_iteration_'
+                                    + str(i) + '.pdf',
+                                    bbox_inches="tight")
+                        plt.close()
+
+                        plt.figure()
+                        plt.plot(x, f.to('cpu').detach().numpy()[:, j], label='Corrector ' + self.plot_labels[j])
+                        plt.plot(x, 2 * (true[:, j].reshape(-1, 1) - y0[j:j + 1].to('cpu').detach().numpy() -
+                                    y0[self.output_size + j:self.output_size + j + 1].to('cpu').detach().numpy()*\
+                                         x.to('cpu').detach().numpy())/x.to('cpu').detach().numpy()**2,
+                                 color='k', label=corrector_plot_legend, linestyle='--')
+                        plt.xlabel('t')
+                        plt.ylabel(r'$\xi$')
+                        plt.title('Neural Net Corrector')
+                        plt.legend()
+                        plt.savefig('F19/Figures/F19_NeuralNetCorrector_PINNS_'+ str(self.plot_labels[j])
+                                    + '_iteration_' + str(i) + '.pdf',
+                                    bbox_inches="tight")
+                        plt.close()
             # F20
             # u = y_output[:, 0]
             # uprime = y_output[:, 1]
@@ -142,9 +282,32 @@ class ode(object):
             # F21
             # u = y_output[:, 0]
             # uprime = y_output[:, 1]
-            # u_x = torch.autograd.grad(u.sum(), x_grad, create_graph=True)[0]
-            # uprime_x = torch.autograd.grad(uprime.sum(), x_grad, create_graph=True)[0]
+            # u_x = torch.autograd.grad(u.sum(), x_grad, create_graph=True)[0].flatten()
+            # uprime_x = torch.autograd.grad(uprime.sum(), x_grad, create_graph=True)[0].flatten()
             # loss = torch.mean((u_x - uprime) ** 2 + (uprime_x + u) ** 2)
+            # loss.backward()
+            # optimizer.step()
+            # scheduler.step()
+            # # F22
+            # q = y_output[:,0]
+            # p = y_output[:,1]
+            # q_t = torch.autograd.grad(q.sum(), x_grad, create_graph=True)[0].flatten()
+            # p_t = torch.autograd.grad(p.sum(), x_grad, create_graph=True)[0].flatten()
+            # loss_q = (q_t - p) **2
+            # loss_p = (p_t + 0.05*p + 9.81*torch.sin(q).flatten()) **2
+            # loss = torch.mean(loss_q + loss_p)
+            # loss.backward()
+            # optimizer.step()
+            # scheduler.step()
+            # # F22 second derivative false
+            # q = y_output[:, 0]
+            # p = y_output[:, 1]
+            # q_t = torch.autograd.grad(q.sum(), x_grad, create_graph=True)[0].flatten()
+            # p_t = torch.autograd.grad(p.sum(), x_grad, create_graph=True)[0].flatten()
+            # loss_q = (q_t - p) ** 2
+            # loss_p = (p_t + 0.05 * p + 9.81 * torch.sin(q).flatten()) ** 2
+            # loss_ic = (q[0].flatten() - y0[0].flatten())**2 + (p[0].flatten() - y0[1].flatten())**2
+            # loss = torch.mean(loss_q + loss_p + loss_ic)
             # loss.backward()
             # optimizer.step()
             # scheduler.step()
@@ -175,15 +338,15 @@ class ode(object):
             # loss.backward()
             # optimizer.step()
             # scheduler.step()
-            # F26
-            u = y_output[:, 0]
-            uprime = y_output[:, 1]
-            u_x = torch.autograd.grad(u.sum(), x_grad, create_graph=True)[0]
-            uprime_x = torch.autograd.grad(uprime.sum(), x_grad, create_graph=True)[0]
-            loss = torch.mean((uprime - u_x) ** 2 + (uprime_x - 1) ** 2)
-            loss.backward()
-            optimizer.step()
-            scheduler.step()
+            # # F26
+            # u = y_output[:, 0]
+            # uprime = y_output[:, 1]
+            # u_x = torch.autograd.grad(u.sum(), x_grad, create_graph=True)[0].flatten()
+            # uprime_x = torch.autograd.grad(uprime.sum(), x_grad, create_graph=True)[0].flatten()
+            # loss = torch.mean((uprime - u_x) ** 2 + (uprime_x - 1) ** 2)
+            # loss.backward()
+            # optimizer.step()
+            # scheduler.step()
 
 
 

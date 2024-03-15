@@ -24,7 +24,7 @@ class numerical_solutions(object):
             dynamical_system.set_integrator(self.solver, method='bdf')
         else:
             dynamical_system.set_integrator(self.solver)
-        dynamical_system.set_initial_value(self.y0, self.t0)
+        dynamical_system.set_initial_value(self.y0,self.t0)
         i = 1
         # start = time()
         while dynamical_system.successful() and dynamical_system.t < self.final_time_forward:
@@ -40,5 +40,5 @@ class numerical_solutions(object):
         else:
             # print('Num Solver time: ' + str(time() - start))
             # return solutions[1:-1:100,:]
-            return solutions[1:-1,:]
+            return solutions[0:-2,:]
 
