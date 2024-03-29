@@ -209,7 +209,9 @@ try:
 except:
     plot_labels = ['x']
 
-output = ode(F,y(zero),zero,0.03125,epochs=int(1e4),batch_size=int(1e3) ,lr=0.01,num_hidden=100,
-             numerical=numerical,second_derivate_expanison=True,record_detailed=True,plot_labels=plot_labels,y_true=y)
+# 0.03125
+output = ode(F,y(zero),zero,0.03125,epochs=int(1e7),batch_size=int(1e3) ,lr=0.01,num_hidden=100,
+             numerical=numerical,second_derivate_expanison=True,record_detailed=True,plots_detailed=False,
+             plot_labels=plot_labels,y_true=y)
 output.train(model_name)
 output.plot(y,model_name,name)
