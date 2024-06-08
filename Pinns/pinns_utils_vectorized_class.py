@@ -319,24 +319,24 @@ class ode(object):
                     detailed_data = detailed_data[
                         ['iteration', 'loss', 'time_taken']]
                     detailed_data.to_csv(self.F.__name__+'/Data/detailed_data_record_'+ self.F.__name__ +
-                                         '_PiNNs.csv',index=False,header=header,mode=mode)
+                                         '_PINNs.csv',index=False,header=header,mode=mode)
 
                     # model save
                     torch.save(model, self.F.__name__+'/Models/'+ self.F.__name__ +
-                                         '_model_PiNNs_iteration_' + str(i) + '.pt')
+                                         '_model_PINNs_iteration_' + str(i) + '.pt')
 
                     f = model(self.x)
                     net = self.y(model, self.x, y0).to('cpu').detach().numpy()
 
                     if self.numerical == False:
                         compare_plot_legend = 'True Sol'
-                        compare_title = 'PiNNs vs True'
-                        error_ylabel = 'x(t): |True - PiNNs|'
+                        compare_title = 'PINNs vs True'
+                        error_ylabel = 'x(t): |True - PINNs|'
                         corrector_plot_legend = 'True Corrector'
                     else:
                         compare_plot_legend = 'Num Sol'
-                        compare_title = 'PiNNs vs Num'
-                        error_ylabel = 'x(t): |Num - PiNNs|'
+                        compare_title = 'PINNs vs Num'
+                        error_ylabel = 'x(t): |Num - PINNs|'
                         corrector_plot_legend = 'Num Corrector'
 
                     for j in range(np.shape(net)[1]):
@@ -391,6 +391,7 @@ class ode(object):
                 print(i, loss.item())
                 # print(i, 'loss_u:' + str(loss_u.mean().item()), 'loss_uprime:' + str(loss_uprime.mean().item()))
 
+        print('NN time: ' + str(time()-start))
         torch.save(model, 'Models/'+savefile)
 
     def plot(self,y_true,model_name='weak_loss_model.pt',filename_prefix='F'):
@@ -424,14 +425,14 @@ class ode(object):
 
             if self.numerical == False:
                 compare_plot_legend = 'True Sol'
-                compare_title = 'PiNNs vs True'
-                error_ylabel = 'x(t): |True - PiNNs|'
+                compare_title = 'PINNs vs True'
+                error_ylabel = 'x(t): |True - PINNs|'
                 plotstart = 0
                 corrector_plot_legend = 'True Corrector'
             else:
                 compare_plot_legend = 'Num Sol'
-                compare_title = 'PiNNs vs Num'
-                error_ylabel = 'x(t): |Num - PiNNs|'
+                compare_title = 'PINNs vs Num'
+                error_ylabel = 'x(t): |Num - PINNs|'
                 plotstart = 30
                 corrector_plot_legend = 'Num Corrector'
 
@@ -447,7 +448,7 @@ class ode(object):
                 plt.ylabel('x(t)')
                 plt.title(compare_title)
                 plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-                plt.savefig('Figures/' + filename_prefix + '_NeuralNetPlot.pdf', bbox_inches="tight")
+                plt.savefig('Figures/' + filename_prefix + '_NeuralNetPlot_PINNS' + version + '.pdf', bbox_inches="tight")
                 plt.show()
 
                 plt.figure()
@@ -457,7 +458,7 @@ class ode(object):
                 plt.ylabel(error_ylabel)
                 plt.title('Error')
                 plt.legend()
-                plt.savefig('Figures/' + filename_prefix + '_NeuralNetErrorPlot.pdf', bbox_inches="tight")
+                plt.savefig('Figures/' + filename_prefix + '_NeuralNetErrorPlot_PINNS' + version + '.pdf', bbox_inches="tight")
                 plt.show()
 
                 plt.figure()
@@ -475,7 +476,7 @@ class ode(object):
                 plt.ylabel(r'$\xi$')
                 plt.title('Neural Net Corrector')
                 plt.legend()
-                plt.savefig('Figures/' + filename_prefix + '_NeuralNetCorrector.pdf', bbox_inches="tight")
+                plt.savefig('Figures/' + filename_prefix + '_NeuralNetCorrector_PINNS' + version + '.pdf', bbox_inches="tight")
                 plt.show()
 
             elif self.plots_detailed == True:
@@ -490,7 +491,8 @@ class ode(object):
                     plt.ylabel('x(t)')
                     plt.title(compare_title)
                     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-                    plt.savefig('Figures/' + filename_prefix + '_NeuralNetPlot_' + str(self.plot_labels[i]) + '.pdf',
+                    plt.savefig('Figures/' + filename_prefix + '_NeuralNetPlot_PINNS_' + str(self.plot_labels[i]) +
+                                version + '.pdf',
                                 bbox_inches="tight")
                     # plt.show()
 
@@ -501,7 +503,8 @@ class ode(object):
                     plt.title('Error')
                     plt.legend()
                     plt.savefig(
-                        'Figures/' + filename_prefix + '_NeuralNetErrorPlot_' + str(self.plot_labels[i]) + '.pdf',
+                        'Figures/' + filename_prefix + '_NeuralNetErrorPlot_PINNS_' + str(self.plot_labels[i]) +
+                                version + '.pdf',
                         bbox_inches="tight")
                     # plt.show()
 
@@ -519,6 +522,7 @@ class ode(object):
                     plt.title('Neural Net Corrector')
                     plt.legend()
                     plt.savefig(
-                        'Figures/' + filename_prefix + '_NeuralNetCorrector_' + str(self.plot_labels[i]) + '.pdf',
+                        'Figures/' + filename_prefix + '_NeuralNetCorrector_PINNS_' + str(self.plot_labels[i]) +
+                                version + '.pdf',
                         bbox_inches="tight")
                     # plt.show()

@@ -1,6 +1,6 @@
 """Weak Loss for Solving ODEs with Neural Networks"""
 import numpy as np
-from scipy.integrate import odeint
+from scipy.integrate import odeint, solve_ivp
 import torch
 from pinns_utils_vectorized_class import ode
 from pinns_numerical_sim import numerical_solutions
@@ -192,7 +192,7 @@ def y26(x):
 F26_plot_labels = ['x','x_prime']
 
 zero = torch.tensor(0)
-number_reference = '19'
+number_reference = '9'
 name = 'F' + number_reference
 model_name = name + '_model_PINNS.pt'
 F = locals()['F'+number_reference]
@@ -210,8 +210,8 @@ except:
     plot_labels = ['x']
 
 # 0.03125
-output = ode(F,y(zero),zero,0.03125,epochs=int(1e7),batch_size=int(1e3) ,lr=0.01,num_hidden=100,
-             numerical=numerical,second_derivate_expanison=True,record_detailed=True,plots_detailed=False,
+output = ode(F,y(zero),zero,torch.pi,epochs=int(1e4),batch_size=int(1e3) ,lr=0.01,num_hidden=100,
+             numerical=numerical,second_derivate_expanison=False,record_detailed=False,plots_detailed=False,
              plot_labels=plot_labels,y_true=y)
 output.train(model_name)
 output.plot(y,model_name,name)

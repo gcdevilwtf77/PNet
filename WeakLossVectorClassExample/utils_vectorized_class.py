@@ -25,6 +25,9 @@ class Net(nn.Module):
 class ode(object):
     def __init__(self,F,y0,T,rule='trapezoid',epochs=10000,lr=0.01,batch_size=1000,cuda=True,num_hidden=100,
                  numerical=False,record_detailed=False,plots_detailed=False,plot_labels=['x'],y_limit=0,y_true='None'):
+
+        torch.set_default_dtype(torch.float64)
+
         self.F = F
         self.y0 = y0
         self.T = T
@@ -56,8 +59,6 @@ class ode(object):
         # Set up x
         self.dx = self.T/self.batch_size
         self.x = torch.arange(self.dx/2, self.T, self.dx).reshape((self.batch_size, 1)).to(self.device)
-
-        torch.set_default_dtype(torch.float64)
 
     def y(self, model,x,y0):
         if self.output_size == 1:
@@ -137,24 +138,24 @@ class ode(object):
                     detailed_data['time_taken'] = (time()-start)/60**2
                     detailed_data = detailed_data[['iteration','loss','time_taken']]
                     detailed_data.to_csv(self.F.__name__+'/Data/detailed_data_record_'+ self.F.__name__ +
-                                         '_PiNNs.csv',index=False,header=header,mode=mode)
+                                         '.csv',index=False,header=header,mode=mode)
 
                     # model save
                     torch.save(model, self.F.__name__+'/Models/'+ self.F.__name__ +
-                                         '_model_PiNNs_iteration_' + str(i) + '.pt')
+                                         '_model_iteration_' + str(i) + '.pt')
 
                     f = model(self.x)
                     net = self.y(model, self.x, y0).to('cpu').detach().numpy()
 
                     if self.numerical == False:
                         compare_plot_legend = 'True Sol'
-                        compare_title = 'PiNNs vs True'
-                        error_ylabel = 'x(t): |True - PiNNs|'
+                        compare_title = 'PNet vs True'
+                        error_ylabel = 'x(t): |True - PNet|'
                         corrector_plot_legend = 'True Corrector'
                     else:
                         compare_plot_legend = 'Num Sol'
-                        compare_title = 'PiNNs vs Num'
-                        error_ylabel = 'x(t): |Num - PiNNs|'
+                        compare_title = 'PNet vs Num'
+                        error_ylabel = 'x(t): |Num - PNet|'
                         corrector_plot_legend = 'Num Corrector'
 
                     for j in range(np.shape(net)[1]):
@@ -166,7 +167,7 @@ class ode(object):
                         plt.ylabel('x(t)')
                         plt.title(compare_title)
                         plt.savefig(self.F.__name__+'/Figures/'+ self.F.__name__ +
-                                         '_NeuralNetPlot_PINNS_'+ str(self.plot_labels[j]) + '_iteration_'
+                                         '_NeuralNetPlot_'+ str(self.plot_labels[j]) + '_iteration_'
                                     + str(i) + '.pdf', bbox_inches="tight")
                         plt.close()
 
@@ -177,7 +178,7 @@ class ode(object):
                         plt.title('Error')
                         plt.legend()
                         plt.savefig(self.F.__name__+'/Figures/'+ self.F.__name__ +
-                                         '_NeuralNetErrorPlot_PINNS_'+ str(self.plot_labels[j]) + '_iteration_'
+                                         '_NeuralNetErrorPlot_'+ str(self.plot_labels[j]) + '_iteration_'
                                     + str(i) + '.pdf',
                                     bbox_inches="tight")
                         plt.close()
@@ -193,14 +194,14 @@ class ode(object):
                         plt.title('Neural Net Corrector')
                         plt.legend()
                         plt.savefig(self.F.__name__+'/Figures/'+ self.F.__name__ +
-                                         '_NeuralNetCorrector_PINNS_'+ str(self.plot_labels[j])
+                                         '_NeuralNetCorrector_'+ str(self.plot_labels[j])
                                     + '_iteration_' + str(i) + '.pdf',
                                     bbox_inches="tight")
                         plt.close()
 
             if i % (self.epochs/10) == 0: #1000 == 0:
                 print(i, loss.item())
-        # print('NN time: ' + str(time()-start))
+        print('NN time: ' + str(time()-start))
         torch.save(model, 'Models/'+savefile)
 
     def plot(self,y_true,model_name='weak_loss_model.pt',filename_prefix='F'):

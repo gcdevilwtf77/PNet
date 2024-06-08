@@ -1,6 +1,6 @@
 """Weak Loss for Solving ODEs with Neural Networks"""
 import numpy as np
-from scipy.integrate import odeint
+from scipy.integrate import odeint, solve_ivp
 import torch
 from utils_vectorized_class import ode
 from numerical_sim import numerical_solutions
@@ -64,13 +64,14 @@ def F11(x,y):
        return torch.vstack([y[:,2],y[:,3],-y[:,0]/(y[:,0]**2+y[:,1]**2)**(3/2),-y[:,1]/(y[:,0]**2+y[:,1]**2)**(3/2)]).T
     except:
         return torch.hstack([y[2],y[3],-y[0]/(y[0]**2+y[1]**2)**(3/2),-y[1]/(y[0]**2+y[1]**2)**(3/2)])
-def F11_num(y,t):
+def F11_num(t,y):
     return [y[2],y[3],-y[0]/(y[0]**2+y[1]**2)**(3/2),-y[1]/(y[0]**2+y[1]**2)**(3/2)]
 def y11(x):
     if x.dim() == 0:
         return torch.from_numpy(np.array([1,-2,-10,-11]))
     else:
-        return torch.from_numpy(odeint(F11_num,[1,-2,-10,-11],x.flatten()))#Num solution for F11
+        return torch.from_numpy(solve_ivp(fun=F11_num,t_span=[x.flatten()[0].item(),x.flatten()[-1].item()],y0=[1,-2,-10,-11],
+                                          t_eval=x.flatten(),method='DOP853').y.T)#Num solution for F11
 F11_plot_labels = ['q_1','q_2','p_1','p_2']
 def F12(x,y):
     try:
@@ -80,7 +81,7 @@ def F12(x,y):
     except:
         return torch.hstack([y[3],y[4],y[5],-y[0]/(y[0]**2+y[1]**2+y[2]**2)**(3/2),-y[1]/(y[0]**2+y[1]**2+y[2]**2)**(3/2),
             -y[2]/(y[0]**2+y[1]**2+y[2])**(3/2)])
-def F12_num(y,t):
+def F12_num(t,y):
     return [y[3],y[4],y[5],-y[0]/(y[0]**2+y[1]**2+y[2]**2)**(3/2),-y[1]/(y[0]**2+y[1]**2+y[2]**2)**(3/2),
             -y[2]/(y[0]**2+y[1]**2+y[2]**2)**(3/2)]
 
@@ -89,7 +90,8 @@ def y12(x):
     if x.dim() == 0:
         return torch.from_numpy(np.array([-1,-2,-3,-0.1,-.11,-.12]))
     else:
-        return torch.from_numpy(odeint(F12_num,[-1,-2,-3,-0.1,-.11,-.12],x.flatten()))#Num solution for F12
+        return torch.from_numpy(solve_ivp(fun=F12_num,t_span=[x.flatten()[0].item(),x.flatten()[-1].item()],y0=[-1,-2,-3,-0.1,-.11,-.12],
+                                          t_eval=x.flatten(),method='DOP853').y.T)#Num solution for F12
 F12_plot_labels = ['q_1','q_2','q_3','p_1','p_2','p_3']
 
 def F13(x,y):
@@ -103,7 +105,8 @@ def y13(x):
     if x.dim() == 0:
         return torch.from_numpy(np.array([1,2,.1,11]))
     else:
-        return torch.from_numpy(odeint(F13_num,[1,2,.1,11],x.flatten()))#Num solution for F13
+        return torch.from_numpy(solve_ivp(fun=F14_num,t_span=[x.flatten()[0].item(),x.flatten()[-1].item()],y0=[1,2,.1,11],
+                                          t_eval=x.flatten(),method='DOP853').y.T)#Num solution for F13
 F13_plot_labels = ['q_1','q_2','p_1','p_2']
 
 def F14(x,y):
@@ -111,13 +114,14 @@ def F14(x,y):
        return torch.vstack([y[:,2],y[:,3],1/((y[:,1]-y[:,0])**2),-1/((y[:,1]-y[:,0])**2)]).T
     except:
         return torch.hstack([y[2],y[3],1/((y[1]-y[0])**2),-1/((y[1]-y[0])**2)])
-def F14_num(y,t):
+def F14_num(t,y):
     return [y[2],y[3],1/((y[1]-y[0])**2),-1/((y[1]-y[0])**2)]
 def y14(x):
     if x.dim() == 0:
         return torch.from_numpy(np.array([1,2,5,10]))
     else:
-        return torch.from_numpy(odeint(F14_num,[1,2,5,10],x.flatten()))#Num solution for F14
+        return torch.from_numpy(solve_ivp(fun=F14_num,t_span=[x.flatten()[0].item(),x.flatten()[-1].item()],y0=[1,2,5,10],
+                                          t_eval=x.flatten(),method='DOP853').y.T)#Num solution for F14
 F14_plot_labels = ['q_1','q_2','p_1','p_2']
 
 def F15(x,y):
@@ -129,7 +133,7 @@ def F15(x,y):
         return torch.hstack([y[3],y[4],y[5],1/((y[1]-y[0])**2) + 1/((y[2]-y[0])**2),
                              -1/((y[1]-y[0])**2) + 1/((y[2]-y[1])**2),
                              -1/((y[2]-y[0])**2) - 1/((y[2]-y[1])**2)])
-def F15_num(y,t):
+def F15_num(t,y):
     return [y[3],y[4],y[5],1/((y[1]-y[0])**2) + 1/((y[2]-y[0])**2),
                              -1/((y[1]-y[0])**2) + 1/((y[2]-y[1])**2),
                              -1/((y[2]-y[0])**2) - 1/((y[2]-y[1])**2)]
@@ -137,12 +141,13 @@ def y15(x):
     if x.dim() == 0:
         return torch.from_numpy(np.array([1,2,3,5,10,15]))
     else:
-        return torch.from_numpy(odeint(F15_num,[1,2,3,5,10,15],x.flatten()))#True solution for F15
+        return torch.from_numpy(solve_ivp(fun=F15_num,t_span=[x.flatten()[0].item(),x.flatten()[-1].item()],y0=[1,2,3,5,10,15],
+                                          t_eval=x.flatten(),method='DOP853').y.T)#True solution for F15
 F15_plot_labels = ['q_1','q_2','q_3','p_1','p_2','p_3']
 
 def F19(x,y):
     k1 = 0.04
-    k2 = 3*1e6#3*1e7
+    k2 = 3*1e5#3*1e7
     k3 = 1e4
     try:
         return torch.vstack([-k1*y[:,0].flatten() + k3*y[:,1].flatten()*y[:,2].flatten(),
@@ -156,7 +161,7 @@ def F19(x,y):
 
 def F19_num(y,t):
     k1 = 0.04
-    k2 = 3*1e6#3*1e7
+    k2 = 3*1e5#3*1e7
     k3 = 1e4
     return [-k1*y[0] + k3*y[1]*y[2], k1*y[0] - k2*y[1]**2 - k3*y[1]*y[2],k2*y[1]**2]
 
@@ -211,7 +216,7 @@ def y26(x):
 F26_plot_labels = ['x','x_prime']
 
 zero = torch.tensor(0)
-number_reference = '15'
+number_reference = '9'
 name = 'F' + number_reference
 model_name = name + '_model.pt'
 F = locals()['F'+number_reference]
@@ -235,6 +240,6 @@ except:
 #0.03125
 #0.00039996
 output = ode(F,y(zero),torch.pi,epochs=int(1e4),numerical=numerical,plot_labels=plot_labels,batch_size=int(1e3),
-             record_detailed=False,plots_detailed=False,y_limit=10,y_true=y)#,rule='simpson')
+             record_detailed=False,plots_detailed=False,y_limit=0,y_true=y)#,rule='simpson')
 output.train(model_name)
 output.plot(y,model_name,name)
